@@ -29,7 +29,7 @@ public class Reverser {
     public ContainerNode reverse() {
         String rootPath = new File(".").getAbsolutePath().replace(".", "");
         Model model = UMLFactory.eINSTANCE.createModel();
-        reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat("lib\\dom4j-1.6.1.jar")), model, trace);
+        reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat("lib/dom4j-1.6.1.jar")), model, trace);
         ContainerNode pack = new ContainerNode();
         addNestedNodes(model, pack);
         return pack;

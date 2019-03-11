@@ -31,7 +31,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
 
-    this.camera.position.set(0, 0, 1000);
+    this.camera.position.set(0, 600, 600);
     this.camera.lookAt(0, 0, 0);
     this.renderer = new THREE.WebGLRenderer();
     // @ts-ignore
@@ -79,8 +79,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     const y = data.y1 - data.y0;
     const x = data.x1 - data.x0;
     const geometry = new THREE.BoxGeometry(data.x1 - data.x0, 100, data.y1 - data.y0)
-      .translate(data.x0 + x / 2 - 500, data.depth * 100, data.y0 + y /2 - 500);
-    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color((data.depth + 1) * 20) });
+      .translate(data.x0 + x / 2 - 500, data.depth * 100, data.y0 + y / 2 - 500);
+    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(`hsl(${data.depth * 40}, 100%, 50%)`) });
     const cube = new THREE.Mesh(geometry, material);
     data.children && data.children.forEach(child => this.fillScene(child));
     this.scene.add(cube);
