@@ -45,6 +45,9 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.controls.verticalMax = 2.0;
     this.controls.lon = -150;
     this.controls.lat = 120;
+    const light = new THREE.DirectionalLight( 0xffffff, 0.5 ) // soft white light
+    light.position.set(0, 1, 1);
+    this.scene.add( light );
 
     this.clock = new THREE.Clock();
     // this.controls.enableDamping = true;
@@ -80,7 +83,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     const x = data.x1 - data.x0;
     const geometry = new THREE.BoxGeometry(data.x1 - data.x0, 100, data.y1 - data.y0)
       .translate(data.x0 + x / 2 - 500, data.depth * 100, data.y0 + y / 2 - 500);
-    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(`hsl(${data.depth * 40}, 100%, 50%)`) });
+    const material = new THREE.MeshStandardMaterial({ color: new THREE.Color(`hsl(${data.depth * 40}, 100%, 50%)`) });
     const cube = new THREE.Mesh(geometry, material);
     data.children && data.children.forEach(child => this.fillScene(child));
     this.scene.add(cube);
