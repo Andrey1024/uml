@@ -37,8 +37,10 @@ public class Reverser {
 
     private void addNestedNodes(Package ownerPackage, ContainerNode entity) {
         addClassifiers(ownerPackage, entity);
+        entity.setName(ownerPackage.getName());
         for (Package ownedPackage : ownerPackage.getNestedPackages()) {
             ContainerNode node = new ContainerNode();
+            node.setName(ownedPackage.getName());
             addNestedNodes(ownedPackage, node);
             entity.addChild(node);
         }
@@ -50,16 +52,33 @@ public class Reverser {
                 .forEach(t -> {
                     Node node = null;
                     if (t instanceof Class) {
-                        node = new ClassNode();
+                        node = this.createClassNode((Class) t);
                     } else if (t instanceof Interface) {
-                        node = new InterfaceNode();
+                        node = this.createInterfaceNode((Interface) t);
                     } else if (t instanceof Enumeration) {
                         node = new EnumNode();
                     }
                     if (node != null) {
+                        node.setName(t.getName());
                         ownerNode.addChild(node);
                     }
                 });
+    }
+
+    private ClassNode createClassNode(Class item) {
+        ClassNode node = new ClassNode();
+
+        node.setMethodsCount(item.getOwnedOperations().size());
+
+        return node;
+    }
+
+    private InterfaceNode createInterfaceNode(Interface item) {
+        InterfaceNode node = new InterfaceNode();
+
+        node.setMethodsCount(item.getOwnedOperations().size());
+
+        return node;
     }
 
 }

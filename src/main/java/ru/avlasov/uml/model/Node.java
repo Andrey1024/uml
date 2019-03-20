@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Node {
     protected String type;
+    private String name;
     private Point location;
     private String color;
 
@@ -30,6 +31,14 @@ public class Node {
 
     public void setLocation(Point location) {
         this.location = location;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public List<Node> children = new ArrayList<>();

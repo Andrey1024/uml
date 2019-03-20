@@ -15,6 +15,8 @@ export class CityService implements SceneService {
     controls: any;
     clock = new THREE.Clock();
 
+    private objects: THREE.Mesh[] = [];
+    private lights: THREE.Light[];
 
     private moveForward = false;
     private moveBackward = false;
@@ -25,6 +27,13 @@ export class CityService implements SceneService {
     constructor() {
         // this.camera.position.set(0, 300, 300);
         this.camera.lookAt(0, 0, 0);
+        this.lights = new Array(5).fill(0).map(() => new THREE.PointLight(0xffffff, 0.2, 0));
+
+        this.lights[0].position.set(-1000, 1000, -1000);
+        this.lights[1].position.set(1000, 1000, -1000);
+        this.lights[2].position.set(-1000, 1000, 1000);
+        this.lights[3].position.set(1000, 1000, 1000);
+        this.lights[4].position.set(0, 1000, 0);
     }
 
     init(canvas: HTMLDivElement) {
@@ -65,9 +74,7 @@ export class CityService implements SceneService {
     addHierarchy(hierarchy: HierarchyRectangularNode<any>) {
         this.scene.remove.apply(this.scene, this.scene.children);
         this.fillScene(hierarchy);
-        const light = new THREE.DirectionalLight(0xffffff, 0.5); // soft white light
-        light.position.set(0, 1, 1);
-        this.scene.add(light);
+        this.scene.add(...this.lights);
         this.controls.getObject().position.set(0, 300, 300);
         this.scene.add(this.controls.getObject());
     }
@@ -83,30 +90,37 @@ export class CityService implements SceneService {
     }
 
     private fillScene(data: HierarchyRectangularNode<Node>, height = 0) {
-        const y = data.y1 - data.y0;
-        const x = data.x1 - data.x0;
         const h = (Math.log(data.descendants().length) + 2) * 10;
-        const material = new THREE.MeshStandardMaterial({color: new THREE.Color(`hsl(${data.depth * 40}, 100%, 50%)`)});
-        const geometry = new THREE.BoxGeometry(data.x1 - data.x0, h, data.y1 - data.y0)
-            .translate(data.x0 + x / 2 - 500, height + h / 2, data.y0 + y / 2 - 500);
-        const cube = new THREE.Mesh(geometry, material);
+        const cube = this.createNodeMesh(data, height, h);
         data.children && data.children.forEach(child => this.fillScene(child, height + h));
         this.scene.add(cube);
     }
 
-    private createNodeMesh(data: HierarchyRectangularNode<Node>, height: number) {
+    private createNodeMesh(data: HierarchyRectangularNode<Node>, level: number, height: number): THREE.Mesh {
+        const y = data.y1 - data.y0;
+        const x = data.x1 - data.x0;
+        const material = new THREE.MeshPhongMaterial({
+            color: new THREE.Color(`hsl(${data.depth * 40}, 100%, 50%)`)
+        });
+        if (data.data.type === "CLASS" || data.data.type === "INTERFACE") {
+            height = (Math.log(data.data.methodsCount + 2) + 2) * 10;
+        }
+        const geometry = new THREE.BoxGeometry(data.x1 - data.x0, height, data.y1 - data.y0)
+            .translate(data.x0 + x / 2 - 500, level + height / 2, data.y0 + y / 2 - 500);
+        return new THREE.Mesh(geometry, material);
     }
 
     private update(delta: number) {
-        const direction = new THREE.Vector3();
-        this.camera.getWorldDirection(direction).normalize();
-        if (this.moveForward) {
-            this.controls.getObject().position.add(direction.multiplyScalar(delta * 100));
-        }
-        if (this.moveBackward) {
-            this.controls.getObject().position.sub(direction.multiplyScalar(delta * 100));
-        }
+        if (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight) {
+            const direction = new THREE.Vector3();
+            this.camera.getWorldDirection(direction).normalize();
+            if (this.moveForward || this.moveBackward) {
+                direction.multiplyScalar(delta * 100 * (Number(this.moveForward) - Number(this.moveBackward)));
 
+                this.controls.getObject().position.add(direction);
+            }
+
+        }
     }
 
     private keyDown = (event) => {
