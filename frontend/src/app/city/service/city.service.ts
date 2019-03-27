@@ -1,7 +1,7 @@
 import {Injectable} from "@angular/core";
 import * as THREE from "three";
 import {SceneService} from "./scene.service";
-import {HierarchyRectangularNode} from "d3-hierarchy";
+import {HierarchyRectangularNode, tree} from "d3-hierarchy";
 import "../../utils/EnableThreeExamples";
 import {Node} from "../model/node.model";
 
@@ -26,14 +26,24 @@ export class CityService implements SceneService {
 
     constructor() {
         // this.camera.position.set(0, 300, 300);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.camera.lookAt(0, 0, 0);
-        this.lights = new Array(5).fill(0).map(() => new THREE.PointLight(0xffffff, 0.2, 0));
+        this.lights = new Array(5).fill(0)
+            .map(() => new THREE.PointLight(0xffffff, 0.2, 0));
+        this.lights.forEach(light => {
+            light.castShadow = true;
+            light.shadow.mapSize.width = 1024;
+            light.shadow.mapSize.height = 1024;
+            (light.shadow.camera as THREE.OrthographicCamera).near = 0.5;
+            (light.shadow.camera as THREE.OrthographicCamera).far = 600
+        });
 
-        this.lights[0].position.set(-1000, 1000, -1000);
-        this.lights[1].position.set(1000, 1000, -1000);
-        this.lights[2].position.set(-1000, 1000, 1000);
-        this.lights[3].position.set(1000, 1000, 1000);
-        this.lights[4].position.set(0, 1000, 0);
+        this.lights[0].position.set(-250, 600, -250);
+        this.lights[1].position.set(-550, 600, 50);
+        this.lights[2].position.set(-550, 600, -550);
+        this.lights[3].position.set(50, 600, 50);
+        this.lights[4].position.set(50, 600, -550);
     }
 
     init(canvas: HTMLDivElement) {
@@ -53,15 +63,6 @@ export class CityService implements SceneService {
 
             }
         );
-        // this.controls.lookSpeed = 0.4;
-        // this.controls.movementSpeed = 100;
-        // this.controls.noFly = false;
-        // this.controls.lookVertical = true;
-        // this.controls.constrainVertical = true;
-        // this.controls.verticalMin = 1.0;
-        // this.controls.verticalMax = 2.0;
-        // this.controls.lon = -150;
-        // this.controls.lat = 120;
         this.resize();
         this.animate();
         this.canvas.addEventListener("click", () => this.controls.lock());
@@ -107,7 +108,10 @@ export class CityService implements SceneService {
         }
         const geometry = new THREE.BoxGeometry(data.x1 - data.x0, height, data.y1 - data.y0)
             .translate(data.x0 + x / 2 - 500, level + height / 2, data.y0 + y / 2 - 500);
-        return new THREE.Mesh(geometry, material);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
     }
 
     private update(delta: number) {
