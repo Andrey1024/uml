@@ -6,7 +6,6 @@ import java.util.List;
 public class Node {
     protected String type;
     private String name;
-    private Point location;
     private String color;
 
     public String getType() {
@@ -25,14 +24,6 @@ public class Node {
         this.color = color;
     }
 
-    public Point getLocation() {
-        return location;
-    }
-
-    public void setLocation(Point location) {
-        this.location = location;
-    }
-
     public String getName() {
         return name;
     }
@@ -41,13 +32,7 @@ public class Node {
         this.name = name;
     }
 
-    public List<Node> children = new ArrayList<>();
-
     public Node() {
 
-    }
-
-    public void addChild(Node node) {
-        this.children.add(node);
     }
 }

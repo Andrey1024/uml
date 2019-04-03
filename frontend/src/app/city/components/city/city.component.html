@@ -1,1 +1,7 @@
-<uml-scene [hierarchy]="data | async"></uml-scene>
+<mat-form-field>
+    <mat-label>Версия</mat-label>
+    <mat-select [formControl]="selectedVersion">
+        <mat-option *ngFor="let ver of versions | async" [value]="ver">{{ ver }}</mat-option>
+    </mat-select>
+</mat-form-field>
+<uml-scene [hierarchy]="selectedData | async"></uml-scene>

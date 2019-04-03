@@ -26,10 +26,10 @@ public class Reverser {
         trace = new LogProgressTracing(log);
     }
 
-    public ContainerNode reverse() {
+    public ContainerNode reverse(String path) {
         String rootPath = new File(".").getAbsolutePath().replace(".", "");
         Model model = UMLFactory.eINSTANCE.createModel();
-        reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat("lib/dom4j-1.6.1.jar")), model, trace);
+        reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat(path)), model, trace);
         ContainerNode pack = new ContainerNode();
         addNestedNodes(model, pack);
         return pack;

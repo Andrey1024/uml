@@ -1,9 +1,9 @@
 import {Injectable} from "@angular/core";
 import * as THREE from "three";
 import {SceneService} from "./scene.service";
-import {HierarchyRectangularNode, tree} from "d3-hierarchy";
+import {HierarchyRectangularNode} from "d3-hierarchy";
 import "../../utils/EnableThreeExamples";
-import {Node} from "../model/node.model";
+import {Element} from "../model/element.model";
 
 @Injectable()
 export class CityService implements SceneService {
@@ -16,7 +16,7 @@ export class CityService implements SceneService {
     clock = new THREE.Clock();
 
     private objects: THREE.Mesh[] = [];
-    private lights: THREE.Light[];
+    private readonly lights: THREE.PointLight[];
 
     private moveForward = false;
     private moveBackward = false;
@@ -29,28 +29,30 @@ export class CityService implements SceneService {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.camera.lookAt(0, 0, 0);
-        this.lights = new Array(5).fill(0)
-            .map(() => new THREE.PointLight(0xffffff, 0.2, 0));
+        this.lights = new Array(3).fill(0)
+            .map(() => new THREE.PointLight(0xffffff, 0.6, 0));
         this.lights.forEach(light => {
             light.castShadow = true;
             light.shadow.mapSize.width = 1024;
             light.shadow.mapSize.height = 1024;
-            (light.shadow.camera as THREE.OrthographicCamera).near = 0.5;
-            (light.shadow.camera as THREE.OrthographicCamera).far = 600
+            light.shadow.camera.near = 0.5;
+            light.shadow.camera.far = 1000
         });
 
-        this.lights[0].position.set(-250, 600, -250);
-        this.lights[1].position.set(-550, 600, 50);
-        this.lights[2].position.set(-550, 600, -550);
-        this.lights[3].position.set(50, 600, 50);
-        this.lights[4].position.set(50, 600, -550);
+        this.lights[0].position.set(-600, 600, -600);
+        this.lights[1].position.set(100, 600, 100);
+        this.lights[2].position.set(-250, 600, -250);
+        this.scene.add(...this.lights);
+        this.scene.add(...this.lights.map(light => new THREE.PointLightHelper(light, 1)));
+        // @ts-ignore
+        this.controls = new THREE.PointerLockControls(this.camera);
+        this.controls.getObject().position.set(0, 300, 300);
+        this.scene.add(this.controls.getObject());
     }
 
     init(canvas: HTMLDivElement) {
         this.canvas = canvas;
         this.canvas.appendChild(this.renderer.domElement);
-        // @ts-ignore
-        this.controls = new THREE.PointerLockControls(this.camera);
         this.controls.addEventListener('lock', () => {
                 document.addEventListener('keydown', this.keyDown, false);
                 document.addEventListener('keyup', this.keyUp, false);
@@ -63,21 +65,23 @@ export class CityService implements SceneService {
 
             }
         );
+        this.canvas.addEventListener("click", () => this.controls.lock());
         this.resize();
         this.animate();
-        this.canvas.addEventListener("click", () => this.controls.lock());
     }
 
     resize() {
         this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+        this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+        this.camera.updateProjectionMatrix();
     }
 
-    addHierarchy(hierarchy: HierarchyRectangularNode<any>) {
-        this.scene.remove.apply(this.scene, this.scene.children);
+    showProject(hierarchy: HierarchyRectangularNode<Element>) {
+        console.log(hierarchy);
+        this.scene.remove(...this.objects);
+        this.objects = [];
         this.fillScene(hierarchy);
-        this.scene.add(...this.lights);
-        this.controls.getObject().position.set(0, 300, 300);
-        this.scene.add(this.controls.getObject());
+        this.scene.add(...this.objects);
     }
 
 
@@ -86,18 +90,17 @@ export class CityService implements SceneService {
 
         const delta = this.clock.getDelta();
         this.update(delta);
-        // this.controls.update(delta);
         this.renderer.render(this.scene, this.camera);
     }
 
-    private fillScene(data: HierarchyRectangularNode<Node>, height = 0) {
+    private fillScene(data: HierarchyRectangularNode<Element>, level = 0) {
         const h = (Math.log(data.descendants().length) + 2) * 10;
-        const cube = this.createNodeMesh(data, height, h);
-        data.children && data.children.forEach(child => this.fillScene(child, height + h));
-        this.scene.add(cube);
+        const cube = this.createNodeMesh(data, level, h);
+        data.children && data.children.forEach(child => this.fillScene(child, level + h));
+        this.objects.push(cube);
     }
 
-    private createNodeMesh(data: HierarchyRectangularNode<Node>, level: number, height: number): THREE.Mesh {
+    private createNodeMesh(data: HierarchyRectangularNode<Element>, level: number, height: number): THREE.Mesh {
         const y = data.y1 - data.y0;
         const x = data.x1 - data.x0;
         const material = new THREE.MeshPhongMaterial({

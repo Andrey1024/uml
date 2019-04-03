@@ -1,4 +1,5 @@
 export interface Node {
-    type: "CONTAINER" | "CLASS" | "INTERFACE";
+    type: string;
     methodsCount?: number;
+    name: string;
 }

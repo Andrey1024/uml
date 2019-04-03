@@ -43,7 +43,7 @@ export class SceneComponent implements OnInit, OnChanges, AfterViewInit, AfterCo
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes.hierarchy && this.hierarchy) {
-            this.sceneService.addHierarchy(this.hierarchy);
+            this.sceneService.showProject(this.hierarchy);
         }
     }
 }
