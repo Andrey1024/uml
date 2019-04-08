@@ -23,6 +23,8 @@ export class CityService implements SceneService {
     private moveLeft = false;
     private moveRight = false;
 
+    private font;
+
 
     constructor() {
         // this.camera.position.set(0, 300, 300);
@@ -48,6 +50,9 @@ export class CityService implements SceneService {
         this.controls = new THREE.PointerLockControls(this.camera);
         this.controls.getObject().position.set(0, 300, 300);
         this.scene.add(this.controls.getObject());
+        new THREE.FontLoader().load("assets/helvetiker_regular.typeface.json", (font => {
+            this.font = font
+        }));
     }
 
     init(canvas: HTMLDivElement) {
@@ -96,8 +101,10 @@ export class CityService implements SceneService {
     private fillScene(data: HierarchyRectangularNode<Element>, level = 0) {
         const h = (Math.log(data.descendants().length) + 2) * 10;
         const cube = this.createNodeMesh(data, level, h);
+        const title = this.createTitle(data, level, h);
         data.children && data.children.forEach(child => this.fillScene(child, level + h));
         this.objects.push(cube);
+        title && this.objects.push(title);
     }
 
     private createNodeMesh(data: HierarchyRectangularNode<Element>, level: number, height: number): THREE.Mesh {
@@ -114,6 +121,21 @@ export class CityService implements SceneService {
         const mesh = new THREE.Mesh(geometry, material);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+        return mesh;
+    }
+
+    private createTitle(data: HierarchyRectangularNode<Element>, level: number, height: number): THREE.Mesh {
+        if (!data.data.name || (data.x1 - data.x0) < 5 * data.data.name.length) return;
+        const material = new THREE.MeshBasicMaterial({
+            color: new THREE.Color("white")
+        });
+        const geometry = new THREE.TextGeometry(data.data.name, {
+            font: this.font,
+            size: 5,
+            height: 0.01
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(data.x0 - 500, level + height - 10, data.y1 - 500);
         return mesh;
     }
 
