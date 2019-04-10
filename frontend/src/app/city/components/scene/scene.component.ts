@@ -1,28 +1,32 @@
 import {
     AfterContentInit,
     AfterViewInit,
+    ChangeDetectionStrategy,
     Component,
     ElementRef,
     HostListener,
-    Input, OnChanges,
-    OnInit, SimpleChanges,
+    Input, NgZone,
+    OnChanges,
+    OnInit,
+    SimpleChanges,
     ViewChild
 } from '@angular/core';
-import { SceneService } from "../../service/scene.service";
-import { HierarchyRectangularNode } from "d3-hierarchy";
+import {SceneService} from "../../service/scene.service";
+import {Element} from "../../model/element.model";
 
 @Component({
     selector: 'uml-scene',
     templateUrl: './scene.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./scene.component.scss']
 })
 export class SceneComponent implements OnInit, OnChanges, AfterViewInit, AfterContentInit {
     @ViewChild("canvas") canvasContainer: ElementRef<HTMLDivElement>;
 
-    @Input() hierarchy: HierarchyRectangularNode<any>;
+    @Input() hierarchy: Element;
 
 
-    constructor(private sceneService: SceneService) {
+    constructor(private sceneService: SceneService, private ngZone: NgZone) {
     }
 
     @HostListener('window:resize', ['$event'])
@@ -43,7 +47,9 @@ export class SceneComponent implements OnInit, OnChanges, AfterViewInit, AfterCo
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes.hierarchy && this.hierarchy) {
-            this.sceneService.showProject(this.hierarchy);
+            this.ngZone.runOutsideAngular(() => {
+                setTimeout(() => this.sceneService.show(this.hierarchy));
+            });
         }
     }
 }
