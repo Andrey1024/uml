@@ -1,5 +1,7 @@
 package ru.avlasov.uml.model;
 
+import java.util.List;
+
 public class ProjectStructure {
     private String name;
     private String version;

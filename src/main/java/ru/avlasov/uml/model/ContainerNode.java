@@ -1,7 +1,7 @@
 package ru.avlasov.uml.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ContainerNode extends Node {
 
@@ -15,5 +15,20 @@ public class ContainerNode extends Node {
     public ContainerNode() {
         super();
         this.setType("CONTAINER");
+    }
+
+    @Override
+    public List<String> collectPaths() {
+        List<String> result =  this.children.stream().map(Node::collectPaths).
+                flatMap(Collection::stream)
+                .collect(Collectors.toList());
+        result.add(this.getFullPath());
+        return result;
+    }
+
+    @Override
+    public void computeLifeSpan(List<Set<String>> versions) {
+        super.computeLifeSpan(versions);
+        children.stream().forEach(child -> child.computeLifeSpan(versions));
     }
 }

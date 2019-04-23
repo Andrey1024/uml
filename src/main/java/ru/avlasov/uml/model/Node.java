@@ -1,8 +1,28 @@
 package ru.avlasov.uml.model;
 
+import java.util.*;
+
 public class Node {
     private String type;
     private String name;
+    private String fullPath;
+    private Integer lifeSpan = 0;
+
+    public Integer getLifeSpan() {
+        return lifeSpan;
+    }
+
+    public void setLifeSpan(Integer lifeSpan) {
+        this.lifeSpan = lifeSpan;
+    }
+
+    public String getFullPath() {
+        return fullPath;
+    }
+
+    public void setFullPath(String fullPath) {
+        this.fullPath = fullPath;
+    }
 
     public String getType() {
         return type;
@@ -18,6 +38,22 @@ public class Node {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public List<String> collectPaths() {
+        return Arrays.asList(this.fullPath);
+    }
+
+    public void computeLifeSpan(List<Set<String>> versions) {
+        Iterator<Set<String>> iterator = versions.iterator();
+        boolean stop = false;
+        while (iterator.hasNext() && !stop) {
+            if (iterator.next().contains(this.fullPath)) {
+                this.lifeSpan++;
+            } else {
+                stop = true;
+            }
+        }
     }
 
     public Node() {

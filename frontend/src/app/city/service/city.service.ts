@@ -1,19 +1,17 @@
 import {Injectable} from "@angular/core";
 import * as THREE from "three";
 import {SceneService} from "./scene.service";
-import {HierarchyRectangularNode, TreemapLayout} from "d3-hierarchy";
+import * as d3 from "d3-hierarchy";
+import {HierarchyNode, HierarchyRectangularNode, TreemapLayout} from "d3-hierarchy";
 import "../../utils/EnableThreeExamples";
 import {Element} from "../model/element.model";
-import {flatten} from "@angular/compiler";
-import {cloneDeep} from "lodash-es";
-import {Container} from "../model/container.model";
-import * as d3 from "d3-hierarchy";
+import {last} from "lodash-es";
 
 export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
     z0: number;
     z1: number;
 
-    meshes: THREE.Mesh[];
+    figure: THREE.Object3D;
 }
 
 @Injectable()
@@ -28,8 +26,10 @@ export class CityService implements SceneService {
     controls: any;
     clock = new THREE.Clock();
 
-    private objects: THREE.Mesh[] = [];
+    private objects: THREE.Object3D[] = [];
     private readonly lights: THREE.PointLight[];
+    private readonly rayCaster = new THREE.Raycaster();
+    private intersected = null;
 
     private moveForward = false;
     private moveBackward = false;
@@ -41,6 +41,8 @@ export class CityService implements SceneService {
     private layout: TreemapLayout<Element>;
 
     private citySize = 1500;
+
+    private mouse = new THREE.Vector2();
 
     constructor() {
         this.layout = d3.treemap<Element>().size([this.citySize, this.citySize])
@@ -92,6 +94,7 @@ export class CityService implements SceneService {
             }
         );
         this.canvas.addEventListener("click", () => this.controls.lock());
+        this.canvas.addEventListener("mousemove", (evt) => this.mouseMove(evt));
         this.resize();
     }
 
@@ -101,14 +104,24 @@ export class CityService implements SceneService {
         this.camera.updateProjectionMatrix();
     }
 
-    showProject(hierarchy: HierarchyRectangularNode<Element>) {
-        console.log(hierarchy);
-        cancelAnimationFrame(this.animationFrame);
-        const city = this.createCityHierarchy(hierarchy);
+    showProject(struct: HierarchyNode<Element>) {
         this.scene.remove(...this.objects);
-        this.objects = [];
-        // this.fillScene(hierarchy);
-        this.objects = flatten(city.descendants().map(node => node.meshes));
+        cancelAnimationFrame(this.animationFrame);
+        const tree = struct
+            .sort(((a, b) => a.data.name.localeCompare(b.data.name)))
+            .sum(node => {
+                switch (node.type) {
+                    case "CONTAINER":
+                        return node.children.length + 10;
+                    case "CLASS":
+                    case "INTERFACE":
+                        return node.methodsCount + 10;
+                    default:
+                        return 10;
+                }
+            });
+        const city = this.createCityHierarchy(this.layout(tree));
+        this.objects = city.descendants().map(node => node.figure);
         this.scene.add(...this.objects);
         this.animate();
     }
@@ -116,19 +129,21 @@ export class CityService implements SceneService {
     show(struct: Element) {
         this.scene.remove(...this.objects);
         cancelAnimationFrame(this.animationFrame);
-        const tree = d3.hierarchy(struct).sum(node => {
-            switch (node.type) {
-                case "CONTAINER":
-                    return node.children.length + 10;
-                case "CLASS":
-                case "INTERFACE":
-                    return node.methodsCount + 10;
-                default:
-                    return 10;
-            }
-        });
+        const tree = d3.hierarchy(struct)
+            .sort(((a, b) => a.data.name.localeCompare(b.data.name)))
+            .sum(node => {
+                switch (node.type) {
+                    case "CONTAINER":
+                        return node.children.length + 10;
+                    case "CLASS":
+                    case "INTERFACE":
+                        return node.methodsCount + 10;
+                    default:
+                        return 10;
+                }
+            });
         const city = this.createCityHierarchy(this.layout(tree));
-        this.objects = flatten(city.descendants().map(node => node.meshes));
+        this.objects = city.descendants().map(node => node.figure);
         this.scene.add(...this.objects);
         this.animate();
     }
@@ -138,9 +153,8 @@ export class CityService implements SceneService {
             const characteristics = this.getCharacteristics(node);
             node.z0 = node.parent === null ? 0 : node.parent.z1;
             node.z1 = node.z0 + characteristics.height;
-            node.meshes = [this.createNodeMesh(node, characteristics.color)];
-            const title = this.createTitleMesh(node);
-            title && node.meshes.push(title);
+            this.createNodeMesh(node, characteristics.color);
+            this.createTitleMesh(node);
         });
         return hierarchy as HierarchyCityNode;
     }
@@ -158,7 +172,8 @@ export class CityService implements SceneService {
                 break;
         }
 
-        const color = new THREE.Color(`hsl(${node.depth * 40}, 100%, 50%)`);
+        const sampleNumber = last(node.ancestors()).data.lifeSpan;
+        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), node.data.lifeSpan / (sampleNumber + 1));
 
         return {height, color};
     }
@@ -169,43 +184,50 @@ export class CityService implements SceneService {
 
         const delta = this.clock.getDelta();
         this.update(delta);
+
+        this.rayCaster.setFromCamera(this.mouse, this.camera);
+
+        // calculate objects intersecting the picking ray
+        const intersects = this.rayCaster.intersectObjects(this.scene.children);
+
+        if (this.intersected !== null) {
+            this.intersected.material.color.setHex(this.intersected.savedColor);
+        }
+        if (intersects.length > 0) {
+            this.intersected = intersects[0].object;
+            this.intersected.savedColor = this.intersected.material.color.getHex();
+            this.intersected.material.color.setHex(0xff0000);
+
+        }
+
         this.renderer.render(this.scene, this.camera);
     }
 
-    // private fillScene(data: HierarchyRectangularNode<Element>, level = 0) {
-    //     const h = (Math.log(data.descendants().length) + 2) * 10;
-    //     const cube = this.createNodeMesh(data, level, h);
-    //     const title = this.createTitleMesh(data, level, h);
-    //     data.children && data.children.forEach(child => this.fillScene(child, level + h));
-    //     this.objects.push(cube);
-    //     title && this.objects.push(title);
-    // }
-
-    private createNodeMesh(data: HierarchyCityNode, color: THREE.Color): THREE.Mesh {
-        const y = data.y1 - data.y0;
-        const x = data.x1 - data.x0;
-        const z = data.z1 - data.z0;
+    private createNodeMesh(node: HierarchyCityNode, color: THREE.Color) {
+        const y = node.y1 - node.y0;
+        const x = node.x1 - node.x0;
+        const z = node.z1 - node.z0;
         const material = new THREE.MeshPhongMaterial({
             color
         });
         let geometry;
-        if (data.data.type === "INTERFACE") {
+        if (node.data.type === "INTERFACE") {
             const rad = Math.min(x, y) / 2;
             geometry = new THREE.CylinderGeometry(rad, rad, z, 32, 32)
-                .translate(data.x0 + x / 2 - this.citySize, data.z0 + z / 2, data.y0 + y / 2 - this.citySize);
+                .translate(node.x0 + x / 2 - this.citySize, node.z0 + z / 2, node.y0 + y / 2 - this.citySize);
         } else {
-            geometry = new THREE.BoxGeometry(data.x1 - data.x0, z, data.y1 - data.y0)
-                .translate(data.x0 + x / 2 - this.citySize, data.z0 + z / 2, data.y0 + y / 2 - this.citySize);
+            geometry = new THREE.BoxGeometry(node.x1 - node.x0, z, node.y1 - node.y0)
+                .translate(node.x0 + x / 2 - this.citySize, node.z0 + z / 2, node.y0 + y / 2 - this.citySize);
         }
         const mesh = new THREE.Mesh(geometry, material);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        return mesh;
+        node.figure = mesh;
     }
 
     private createTitleMesh(node: HierarchyCityNode): THREE.Mesh {
         if (!node.data.name
-            || node.data.type === "INTERFACE"
+            || node.data.type !== "CONTAINER"
             || (node.x1 - node.x0) < 5 * node.data.name.length)
             return;
         const material = new THREE.MeshBasicMaterial({
@@ -218,7 +240,7 @@ export class CityService implements SceneService {
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(node.x0 - this.citySize, node.z1 - 10, node.y1 - this.citySize);
-        return mesh;
+        node.figure.add(mesh);
     }
 
     private update(delta: number) {
@@ -281,4 +303,9 @@ export class CityService implements SceneService {
         }
 
     };
+
+    private mouseMove(evt: MouseEvent) {
+        this.mouse.x = (evt.offsetX / this.canvas.clientWidth) * 2 - 1;
+        this.mouse.y = -(evt.offsetY / this.canvas.clientHeight) * 2 + 1;
+    }
 }
