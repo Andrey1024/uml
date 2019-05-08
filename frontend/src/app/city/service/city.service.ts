@@ -1,4 +1,4 @@
-import {Injectable} from "@angular/core";
+import {ComponentRef, Injectable} from "@angular/core";
 import * as THREE from "three";
 import {SceneService} from "./scene.service";
 import * as d3 from "d3-hierarchy";
@@ -6,6 +6,10 @@ import {HierarchyNode, HierarchyRectangularNode, TreemapLayout} from "d3-hierarc
 import "../../utils/EnableThreeExamples";
 import {Element} from "../model/element.model";
 import {last} from "lodash-es";
+import {ComponentPortal, Portal} from "@angular/cdk/portal";
+import {TooltipComponent} from "../components/tooltip/tooltip.component";
+import {Overlay, OverlayRef} from "@angular/cdk/overlay";
+import {hostReportError} from "rxjs/internal-compatibility";
 
 export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
     z0: number;
@@ -17,6 +21,10 @@ export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
 @Injectable()
 export class CityService implements SceneService {
     canvas: HTMLDivElement = null;
+    tooltip: HTMLDivElement = document.createElement('div');
+
+    tooltipComponent: ComponentRef<TooltipComponent>;
+    tooltipOverlay: OverlayRef;
 
     animationFrame;
 
@@ -44,10 +52,13 @@ export class CityService implements SceneService {
 
     private mouse = new THREE.Vector2();
 
-    constructor() {
+    constructor(private overlay: Overlay) {
+        this.tooltip.style.position = 'absolute';
         this.layout = d3.treemap<Element>().size([this.citySize, this.citySize])
             .round(false)
-            .padding(10);
+            .paddingOuter(30)
+            .paddingInner(20)
+            .tile(d3.treemapBinary);
         // this.camera.position.set(0, 300, 300);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -81,6 +92,8 @@ export class CityService implements SceneService {
     init(canvas: HTMLDivElement) {
         this.canvas = canvas;
         this.canvas.appendChild(this.renderer.domElement);
+
+        this.canvas.appendChild(this.tooltip);
         this.controls.addEventListener('lock', () => {
                 document.addEventListener('keydown', this.keyDown, false);
                 document.addEventListener('keyup', this.keyUp, false);
@@ -95,6 +108,15 @@ export class CityService implements SceneService {
         );
         this.canvas.addEventListener("click", () => this.controls.lock());
         this.canvas.addEventListener("mousemove", (evt) => this.mouseMove(evt));
+
+        this.tooltipOverlay = this.overlay.create({
+            positionStrategy: this.overlay.position().flexibleConnectedTo(this.tooltip)
+                .withPositions([{
+                    originX: "center", originY: "center", overlayX: "start", overlayY: "bottom"
+                }]),
+            minWidth: 100,
+            minHeight: 20
+        });
         this.resize();
     }
 
@@ -115,7 +137,7 @@ export class CityService implements SceneService {
                         return node.children.length + 10;
                     case "CLASS":
                     case "INTERFACE":
-                        return node.methodsCount + 10;
+                        return node.attributesCount + 10;
                     default:
                         return 10;
                 }
@@ -194,10 +216,16 @@ export class CityService implements SceneService {
             this.intersected.material.color.setHex(this.intersected.savedColor);
         }
         if (intersects.length > 0) {
+            if (!this.tooltipOverlay.hasAttached()) {
+                this.tooltipComponent = this.tooltipOverlay.attach(new ComponentPortal(TooltipComponent));
+            }
             this.intersected = intersects[0].object;
             this.intersected.savedColor = this.intersected.material.color.getHex();
             this.intersected.material.color.setHex(0xff0000);
-
+            this.tooltipComponent.instance.object = this.intersected.rawObject;
+            this.tooltipOverlay.updatePosition();
+        } else {
+            this.tooltipOverlay.detach();
         }
 
         this.renderer.render(this.scene, this.camera);
@@ -223,6 +251,7 @@ export class CityService implements SceneService {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         node.figure = mesh;
+        node.figure['rawObject'] = node.data;
     }
 
     private createTitleMesh(node: HierarchyCityNode): THREE.Mesh {
@@ -307,5 +336,7 @@ export class CityService implements SceneService {
     private mouseMove(evt: MouseEvent) {
         this.mouse.x = (evt.offsetX / this.canvas.clientWidth) * 2 - 1;
         this.mouse.y = -(evt.offsetY / this.canvas.clientHeight) * 2 + 1;
+        this.tooltip.style.left = `${evt.offsetX}px`;
+        this.tooltip.style.top = `${evt.offsetY}px`;
     }
 }

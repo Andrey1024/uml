@@ -72,6 +72,7 @@ public class Reverser {
         ClassNode node = new ClassNode();
 
         node.setMethodsCount(item.getOwnedOperations().size());
+        node.setAttributesCount(item.getOwnedAttributes().size());
 
         return node;
     }
@@ -80,6 +81,7 @@ public class Reverser {
         InterfaceNode node = new InterfaceNode();
 
         node.setMethodsCount(item.getOwnedOperations().size());
+        node.setAttributesCount(item.getOwnedAttributes().size());
 
         return node;
     }

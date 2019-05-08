@@ -2,6 +2,15 @@ package ru.avlasov.uml.model;
 
 public class InterfaceNode extends Node {
     private int methodsCount;
+    private int attributesCount;
+
+    public int getAttributesCount() {
+        return attributesCount;
+    }
+
+    public void setAttributesCount(int attributesCount) {
+        this.attributesCount = attributesCount;
+    }
 
     public int getMethodsCount() {
         return methodsCount;

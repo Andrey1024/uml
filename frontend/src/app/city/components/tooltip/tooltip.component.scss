@@ -1,0 +1,15 @@
+:host {
+  background: linen;
+  border-radius: 5px;
+  pointer-events: none;
+  padding: 5px;
+}
+
+.info {
+  display: flex;
+  justify-content: space-between;
+
+  span + span {
+    margin-left: 5px;
+  }
+}
