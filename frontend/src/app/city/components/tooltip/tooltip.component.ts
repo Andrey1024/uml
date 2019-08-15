@@ -1,5 +1,5 @@
-import {Component, OnInit} from '@angular/core';
-import {Element} from "../../model/element.model";
+import { Component, OnInit } from '@angular/core';
+import { Element } from '../../model/element.model';
 
 @Component({
     selector: 'uml-tooltip',

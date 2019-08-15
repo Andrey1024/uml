@@ -1,9 +1,9 @@
-import {Element} from "../model/element.model";
-import {HierarchyNode} from "d3-hierarchy";
+import { Element } from '../model/element.model';
+import * as THREE from 'three';
 
 export abstract class SceneService {
-    init: (canvas: HTMLDivElement) => void;
-    resize: () => void;
-    show: (hierarchy: Element) => void;
-    showProject: (hierarchy: HierarchyNode<Element>) => void;
+    // readonly canvas: HTMLCanvasElement;
+    // resize: (width: number, height: number) => void;
+    show: (hierarchy: Element) => THREE.Object3D[];
+    // showProject: (hierarchy: HierarchyNode<Element>) => void;
 }

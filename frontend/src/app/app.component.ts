@@ -1,8 +1,4 @@
-import {Component} from '@angular/core';
-import "./utils/EnableThreeExamples";
-import 'three/examples/js/controls/PointerLockControls';
-import 'three/examples/js/controls/TransformControls';
-import 'three/examples/js/controls/FirstPersonControls';
+import { Component } from '@angular/core';
 
 
 @Component({

@@ -1,7 +1,7 @@
-import {Node} from "./node.model";
+import { Node } from './node.model';
 
-export interface Interface extends Node  {
-    type: "INTERFACE";
+export interface Interface extends Node {
+    type: 'INTERFACE';
     methodsCount: number;
     attributesCount: number;
 }

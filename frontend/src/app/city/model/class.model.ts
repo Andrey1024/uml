@@ -1,7 +1,7 @@
-import {Node} from "./node.model";
+import { Node } from './node.model';
 
 export interface Class extends Node {
-    type: "CLASS";
+    type: 'CLASS';
     methodsCount: number;
     attributesCount: number;
 }

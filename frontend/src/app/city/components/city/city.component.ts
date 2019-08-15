@@ -1,22 +1,22 @@
-import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
-import {SceneService} from "../../service/scene.service";
-import {CityService} from "../../service/city.service";
-import {HttpClient} from "@angular/common/http";
-import {Observable} from "rxjs/internal/Observable";
-import * as d3 from "d3-hierarchy";
-import {HierarchyRectangularNode} from "d3-hierarchy";
-import {filter, map} from "rxjs/operators";
-import {FormControl} from "@angular/forms";
-import {ProjectStructure} from "../../model/project-structure.model";
-import {BehaviorSubject, combineLatest} from "rxjs";
-import {Element} from "../../model/element.model";
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { SceneService } from '../../service/scene.service';
+import { CityService } from '../../service/city.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs/internal/Observable';
+import * as d3 from 'd3-hierarchy';
+import { HierarchyRectangularNode } from 'd3-hierarchy';
+import { filter, map } from 'rxjs/operators';
+import { FormControl } from '@angular/forms';
+import { ProjectStructure } from '../../model/project-structure.model';
+import { BehaviorSubject, combineLatest } from 'rxjs';
+import { Element } from '../../model/element.model';
 
 @Component({
     selector: 'uml-city',
     templateUrl: './city.component.html',
     styleUrls: ['./city.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [{provide: SceneService, useClass: CityService}]
+    providers: [{ provide: SceneService, useClass: CityService }]
 })
 export class CityComponent implements OnInit {
     data = new BehaviorSubject<ProjectStructure[]>([]);
@@ -25,15 +25,6 @@ export class CityComponent implements OnInit {
     selectedData: Observable<Element>;
 
     constructor(private http: HttpClient) {
-    }
-
-    ngOnInit() {
-        const treemapLayout = d3.treemap<Element>().size([1000, 1000])
-            .round(false)
-            .padding(15);
-        treemapLayout.tile(d3.treemapResquarify.ratio(1));
-        const cache = new Map<string, HierarchyRectangularNode<Element>>();
-        this.http.get<ProjectStructure[]>("api/model").subscribe(this.data);
         this.versions = this.data.pipe(map(data => data.map(project => project.version)));
         this.selectedData = combineLatest(this.selectedVersion.valueChanges, this.data).pipe(
             filter(([version, data]) => data.some(d => d.version === version)),
@@ -50,7 +41,16 @@ export class CityComponent implements OnInit {
                 // cache.set(version, result);
                 // return result;
             })
-        )
+        );
+    }
+
+    ngOnInit() {
+        const treemapLayout = d3.treemap<Element>().size([1000, 1000])
+            .round(false)
+            .padding(15);
+        treemapLayout.tile(d3.treemapResquarify.ratio(1));
+        const cache = new Map<string, HierarchyRectangularNode<Element>>();
+        this.http.get<ProjectStructure[]>('api/model').subscribe(this.data);
     }
 
 }

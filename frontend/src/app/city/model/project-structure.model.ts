@@ -1,4 +1,4 @@
-import {Container} from "./container.model";
+import { Container } from './container.model';
 
 export interface ProjectStructure {
     name: string;

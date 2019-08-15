@@ -1,18 +1,18 @@
 import {
-    AfterContentInit,
     AfterViewInit,
     ChangeDetectionStrategy,
     Component,
     ElementRef,
-    HostListener,
-    Input, NgZone,
+    Input,
+    NgZone,
     OnChanges,
     OnInit,
     SimpleChanges,
     ViewChild
 } from '@angular/core';
-import {SceneService} from "../../service/scene.service";
-import {Element} from "../../model/element.model";
+import { SceneService } from '../../service/scene.service';
+import { Element } from '../../model/element.model';
+import * as THREE from 'three';
 
 @Component({
     selector: 'uml-scene',
@@ -20,28 +20,21 @@ import {Element} from "../../model/element.model";
     changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./scene.component.scss']
 })
-export class SceneComponent implements OnInit, OnChanges, AfterViewInit, AfterContentInit {
-    @ViewChild("canvas") canvasContainer: ElementRef<HTMLDivElement>;
-
-    @Input() hierarchy: Element;
-
+export class SceneComponent implements OnInit, OnChanges, AfterViewInit {
+    @ViewChild('canvas', { static: true }) canvasContainer: ElementRef<HTMLDivElement>;
+    objects: THREE.Object3D[] = [];
 
     constructor(private sceneService: SceneService, private ngZone: NgZone) {
     }
 
-    @HostListener('window:resize', ['$event'])
-    public onResize(event: Event) {
-        this.sceneService.resize();
+    @Input() set hierarchy(data: Element) {
+        this.objects = data ? this.sceneService.show(data) : [];
     }
 
     ngOnInit() {
     }
 
     ngAfterViewInit() {
-        this.sceneService.init(this.canvasContainer.nativeElement);
-    }
-
-    ngAfterContentInit() {
 
     }
 

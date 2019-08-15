@@ -1,12 +1,13 @@
-import {NgModule} from "@angular/core";
-import {CommonModule} from "@angular/common";
-import {CityComponent} from "./components/city/city.component";
-import {SceneComponent} from './components/scene/scene.component';
-import {ReactiveFormsModule} from "@angular/forms";
-import {MatFormFieldModule, MatSelectModule} from "@angular/material";
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { CityComponent } from './components/city/city.component';
+import { SceneComponent } from './components/scene/scene.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatFormFieldModule, MatSelectModule } from '@angular/material';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
-import {OverlayModule} from "@angular/cdk/overlay";
-import {PortalModule} from "@angular/cdk/portal";
+import { OverlayModule } from '@angular/cdk/overlay';
+import { PortalModule } from '@angular/cdk/portal';
+import { ThreeDirective } from './directives/three.directive';
 
 @NgModule({
     imports: [
@@ -21,6 +22,7 @@ import {PortalModule} from "@angular/cdk/portal";
         CityComponent,
         SceneComponent,
         TooltipComponent,
+        ThreeDirective
     ],
     entryComponents: [
         TooltipComponent

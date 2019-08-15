@@ -1,6 +1,6 @@
-import {Node} from "./node.model";
+import { Node } from './node.model';
 
 export interface Container extends Node {
-    type: "CONTAINER";
+    type: 'CONTAINER';
     children: Node[];
 }

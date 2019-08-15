@@ -6,7 +6,7 @@
     <span>Имя:</span>
     <span>{{ object.name }}</span>
 </div>
-<div class="info" *ngIf="object.type === 'CLASS' || object.type === 'INTERFACE'">
+<div *ngIf="object.type === 'CLASS' || object.type === 'INTERFACE'" class="info">
     <span>Количество методов:</span>
     <span>{{ object['methodsCount'] }}</span>
 </div>

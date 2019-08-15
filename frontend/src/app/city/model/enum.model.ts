@@ -1,5 +1,5 @@
-import {Node} from "./node.model";
+import { Node } from './node.model';
 
 export interface Enum extends Node {
-    type: "ENUM";
+    type: 'ENUM';
 }
