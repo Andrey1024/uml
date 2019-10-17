@@ -210,15 +210,15 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         const intersects = this.rayCaster.intersectObjects(this.scene.children);
 
         if (this.intersected !== null) {
-            this.intersected.material.color.setHex(this.intersected.savedColor);
+            this.intersected['material'].color.setHex(this.intersected['savedColor']);
         }
         if (intersects.length > 0) {
             // if (!this.tooltipOverlay.hasAttached()) {
             //     this.tooltipComponent = this.tooltipOverlay.attach(new ComponentPortal(TooltipComponent));
             // }
             this.intersected = intersects[0].object;
-            this.intersected['savedColor'] = this.intersected.material.color.getHex();
-            this.intersected.material.color.setHex(0xff0000);
+            this.intersected['savedColor'] = this.intersected['material'].color.getHex();
+            this.intersected['material'].color.setHex(0xff0000);
             // this.tooltipComponent.instance.object = this.intersected.rawObject;
             // this.tooltipOverlay.updatePosition();
         } else {

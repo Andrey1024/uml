@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, InjectionToken } from '@angular/core';
 import * as THREE from 'three';
 import { SceneService } from './scene.service';
 import * as d3 from 'd3-hierarchy';
@@ -6,6 +6,8 @@ import { HierarchyRectangularNode, TreemapLayout } from 'd3-hierarchy';
 import { Element } from '../model/element.model';
 import { last } from 'lodash-es';
 import { Overlay } from '@angular/cdk/overlay';
+import { FontService } from './font.service';
+
 
 export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
     z0: number;
@@ -20,18 +22,16 @@ export class CityService implements SceneService {
     private layout: TreemapLayout<Element>;
 
     private citySize = 1500;
-    private font: THREE.Font;
 
-    constructor(private overlay: Overlay) {
+    font = this.fontService.font;
+
+    constructor(private overlay: Overlay, private fontService: FontService) {
         // this.tooltip.style.position = 'absolute';
         this.layout = d3.treemap<Element>().size([this.citySize, this.citySize])
             .round(false)
             .paddingOuter(30)
             .paddingInner(20)
             .tile(d3.treemapBinary);
-        new THREE.FontLoader().load('assets/helvetiker_regular.typeface.json', (font => {
-            this.font = font;
-        }));
     }
 
     private static closeValue(value: number, ...steps: number[]): number {
@@ -47,11 +47,9 @@ export class CityService implements SceneService {
         switch (element.type) {
             case 'CLASS':
             case 'INTERFACE':
-                return  CityService.closeValue(element.methodsCount, 10, 20, 30, 40, 50);
-            case 'CONTAINER':
-                return element.children.length * 10 + 10;
+                return CityService.closeValue(element.methodsCount, 10, 20, 30, 40, 50);
             default:
-                return 10;
+                return 0;
         }
     }
 
@@ -83,7 +81,8 @@ export class CityService implements SceneService {
                 break;
             case 'CLASS':
             case 'INTERFACE':
-                height = Math.max(node.data.methodsCount * 5, 15);
+                // height = Math.max(node.data.methodsCount * 5, 15);
+                height = CityService.closeValue(node.data.methodsCount, 2, 4, 8, 16, 32) * 5;
                 break;
         }
 

@@ -26,7 +26,7 @@ export class CityComponent implements OnInit {
 
     constructor(private http: HttpClient) {
         this.versions = this.data.pipe(map(data => data.map(project => project.version)));
-        this.selectedData = combineLatest(this.selectedVersion.valueChanges, this.data).pipe(
+        this.selectedData = combineLatest([this.selectedVersion.valueChanges, this.data]).pipe(
             filter(([version, data]) => data.some(d => d.version === version)),
             map(([version, data]) => {
                 return data.find(project => project.version === version).data;
