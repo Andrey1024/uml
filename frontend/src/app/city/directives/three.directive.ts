@@ -185,6 +185,7 @@ export class ThreeDirective implements OnChanges, OnDestroy {
     ngOnDestroy(): void {
         cancelAnimationFrame(this.animationFrame);
         this.controls.dispose();
+        this.renderer.dispose();
     }
 
 

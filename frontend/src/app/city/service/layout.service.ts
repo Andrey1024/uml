@@ -1,3 +1,6 @@
+import { Element } from '../model/element.model';
+import * as THREE from 'three';
+
 export abstract class LayoutService {
-    abstract dispose(tree: Element): any;
+    place: (hierarchy: Element) => THREE.Object3D[];
 }

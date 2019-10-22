@@ -1,13 +1,14 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CityComponent } from './components/city/city.component';
-import { SceneComponent } from './components/scene/scene.component';
+import { VisualizerComponent } from './components/visualizer/visualizer.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MatFormFieldModule, MatSelectModule } from '@angular/material';
+import {MatButtonToggleModule, MatFormFieldModule, MatSelectModule, MatTabsModule} from '@angular/material';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
 import { ThreeDirective } from './directives/three.directive';
+import { StreetComponent } from './components/street/street.component';
+import { CityComponent } from './components/city/city.component';
 
 @NgModule({
     imports: [
@@ -16,19 +17,23 @@ import { ThreeDirective } from './directives/three.directive';
         MatSelectModule,
         MatFormFieldModule,
         OverlayModule,
-        PortalModule
+        PortalModule,
+        MatTabsModule,
+        MatButtonToggleModule
     ],
     declarations: [
-        CityComponent,
-        SceneComponent,
+        VisualizerComponent,
         TooltipComponent,
-        ThreeDirective
+        ThreeDirective,
+        StreetComponent,
+        CityComponent
     ],
     entryComponents: [
         TooltipComponent
     ],
     exports: [
-        CityComponent
+        VisualizerComponent,
+        StreetComponent
     ]
 })
 export class CityModule {

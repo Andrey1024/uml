@@ -1,6 +1,6 @@
 import { Injectable, InjectionToken } from '@angular/core';
 import * as THREE from 'three';
-import { SceneService } from './scene.service';
+import { LayoutService } from './layout.service';
 import * as d3 from 'd3-hierarchy';
 import { HierarchyRectangularNode, TreemapLayout } from 'd3-hierarchy';
 import { Element } from '../model/element.model';
@@ -17,9 +17,9 @@ export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
 }
 
 @Injectable()
-export class CityService implements SceneService {
+export class CityService implements LayoutService {
 
-    private layout: TreemapLayout<Element>;
+    private readonly layout: TreemapLayout<Element>;
 
     private citySize = 1500;
 
@@ -53,7 +53,7 @@ export class CityService implements SceneService {
         }
     }
 
-    show(struct: Element): THREE.Object3D[] {
+    place(struct: Element): THREE.Object3D[] {
         const tree = d3.hierarchy(struct)
             .sort(((a, b) => a.data.name.localeCompare(b.data.name)))
             .sum(CityService.getElementWeight);
