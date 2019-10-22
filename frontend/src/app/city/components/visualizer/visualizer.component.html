@@ -4,12 +4,7 @@
         <mat-option *ngFor="let ver of versions | async" [value]="ver">{{ ver }}</mat-option>
     </mat-select>
 </mat-form-field>
-<mat-button-toggle-group #typeGroup="matButtonToggleGroup" aria-label="Font Style">
-    <mat-button-toggle value="city">City</mat-button-toggle>
-    <mat-button-toggle value="streets">Evo Streets</mat-button-toggle>
+<mat-button-toggle-group [formControl]="selectedLayout" aria-label="Font Style">
+    <mat-button-toggle *ngFor="let layout of layoutTypes" [value]="layout">{{ layout }}</mat-button-toggle>
 </mat-button-toggle-group>
-<uml-city *ngIf="typeGroup.value == 'city'; else streets"
-          [hierarchy]="selectedData | async"></uml-city>
-<ng-template #streets matTabContent>
-    <uml-street [hierarchy]="selectedData | async"></uml-street>
-</ng-template>
+<div [umlThree]="objects | async" class="canvas"></div>

@@ -18,6 +18,7 @@ export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
 
 @Injectable()
 export class CityService implements LayoutService {
+    readonly name = '3D City';
 
     private readonly layout: TreemapLayout<Element>;
 

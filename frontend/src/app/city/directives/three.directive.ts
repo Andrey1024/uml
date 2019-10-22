@@ -173,10 +173,10 @@ export class ThreeDirective implements OnChanges, OnDestroy {
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes.objects) {
-            if (!changes.objects.isFirstChange() && changes.objects.previousValue.length) {
+            if (!changes.objects.isFirstChange() && changes.objects.previousValue && changes.objects.previousValue.length) {
                 this.scene.remove(...changes.objects.previousValue);
             }
-            if (this.objects.length) {
+            if (this.objects && this.objects.length) {
                 this.scene.add(...this.objects);
             }
         }
