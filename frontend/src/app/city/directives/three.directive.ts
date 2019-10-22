@@ -1,4 +1,5 @@
 import {
+    ComponentRef,
     Directive,
     ElementRef,
     EventEmitter,
@@ -11,6 +12,9 @@ import {
 } from '@angular/core';
 import * as THREE from 'three';
 import { PointerLockControls } from '../utils/pointer-lock-controls';
+import { TooltipComponent } from '../components/tooltip/tooltip.component';
+import { Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { ComponentPortal } from '@angular/cdk/portal';
 
 @Directive({
     selector: '[umlThree]'
@@ -19,6 +23,10 @@ export class ThreeDirective implements OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
     @Input() citySize = 1500;
     @Output() select = new EventEmitter();
+
+    tooltipEl: HTMLDivElement;
+    tooltipComponent: ComponentRef<TooltipComponent>;
+    tooltipOverlay: OverlayRef;
 
     private scene = new THREE.Scene();
     private renderer = new THREE.WebGLRenderer();
@@ -40,9 +48,21 @@ export class ThreeDirective implements OnChanges, OnDestroy {
 
     private mouse = new THREE.Vector2();
 
-    constructor(private element: ElementRef<HTMLDivElement>) {
+    constructor(private element: ElementRef<HTMLDivElement>, private overlay: Overlay) {
+        this.tooltipEl = document.createElement('div');
+        this.tooltipEl.style.position = 'absolute';
         element.nativeElement.appendChild(this.renderer.domElement);
+        element.nativeElement.appendChild(this.tooltipEl);
         this.resize(element.nativeElement.clientWidth, element.nativeElement.clientHeight);
+
+        this.tooltipOverlay = this.overlay.create({
+            positionStrategy: this.overlay.position().flexibleConnectedTo(this.tooltipEl)
+                .withPositions([{
+                    originX: 'center', originY: 'center', overlayX: 'start', overlayY: 'bottom'
+                }]),
+            minWidth: 100,
+            minHeight: 20
+        });
 
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -112,8 +132,8 @@ export class ThreeDirective implements OnChanges, OnDestroy {
     onMouseMove(evt: MouseEvent) {
         this.mouse.x = (evt.offsetX / this.element.nativeElement.clientWidth) * 2 - 1;
         this.mouse.y = -(evt.offsetY / this.element.nativeElement.clientHeight) * 2 + 1;
-        // this.tooltip.style.left = `${evt.offsetX}px`;
-        // this.tooltip.style.top = `${evt.offsetY}px`;
+        this.tooltipEl.style.left = `${evt.offsetX}px`;
+        this.tooltipEl.style.top = `${evt.offsetY}px`;
     }
 
     @HostListener('click')
@@ -214,16 +234,16 @@ export class ThreeDirective implements OnChanges, OnDestroy {
             this.intersected['material'].color.setHex(this.intersected['savedColor']);
         }
         if (intersects.length > 0) {
-            // if (!this.tooltipOverlay.hasAttached()) {
-            //     this.tooltipComponent = this.tooltipOverlay.attach(new ComponentPortal(TooltipComponent));
-            // }
+            if (!this.tooltipOverlay.hasAttached()) {
+                this.tooltipComponent = this.tooltipOverlay.attach(new ComponentPortal(TooltipComponent));
+            }
             this.intersected = intersects[0].object;
             this.intersected['savedColor'] = this.intersected['material'].color.getHex();
             this.intersected['material'].color.setHex(0xff0000);
-            // this.tooltipComponent.instance.object = this.intersected.rawObject;
-            // this.tooltipOverlay.updatePosition();
+            this.tooltipComponent.instance.object = this.intersected['rawObject'];
+            this.tooltipOverlay.updatePosition();
         } else {
-            // this.tooltipOverlay.detach();
+            this.tooltipOverlay.detach();
         }
 
         this.renderer.render(this.scene, this.camera);

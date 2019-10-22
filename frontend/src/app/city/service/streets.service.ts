@@ -34,7 +34,7 @@ export class StreetsService implements LayoutService {
 
     place(hierarchy: Element): THREE.Object3D[] {
         const flat = this.flat(hierarchy);
-        return this.computePositions(flat, { x: 0, y: 0 }, 0);
+        return this.computePositions(flat, { x: 0, y: -flat.right }, 0);
     }
 
     private flat(el: Element, depth = 0): FlatStreet {
@@ -50,7 +50,17 @@ export class StreetsService implements LayoutService {
                     width: 15, height: 15, data: el, depth
                 };
             case 'CONTAINER':
-                const sorted = el.children.map(e => this.flat(e as Element, depth + 1));
+                const sorted = el.children
+                    .sort((a, b) => {
+                        if (a.lifeSpan < b.lifeSpan) {
+                            return 1;
+                        } else if (a.lifeSpan > b.lifeSpan) {
+                            return -1;
+                        } else {
+                            return a.name.localeCompare(b.name);
+                        }
+                    })
+                    .map(e => this.flat(e as Element, depth + 1));
                 const odd = sorted.filter((_, i) => i % 2 === 1);
                 const even = sorted.filter((_, i) => i % 2 === 0);
                 const height = Math.max(
@@ -109,14 +119,16 @@ export class StreetsService implements LayoutService {
         const material = new THREE.MeshPhongMaterial({
             color
         });
-        const geometry = new THREE.BoxGeometry(height, 30, width)
+        const old = 10 + node.lifeSpan * 10;
+        const geometry = new THREE.BoxGeometry(height, old, width)
             .rotateY(direction)
             .translate(
                 x0 + (Math.cos(direction) * height - Math.sin(direction) * width) / 2,
-                15,
+                old / 2,
                 y0 + (Math.cos(direction) * width + Math.sin(direction) * height) / 2
             );
         const mesh = new THREE.Mesh(geometry, material);
+        mesh['rawObject'] = node;
         return mesh;
     }
 }
