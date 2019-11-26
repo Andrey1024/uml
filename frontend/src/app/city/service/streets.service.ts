@@ -143,8 +143,20 @@ export class StreetsService implements LayoutService {
             color, side: THREE.DoubleSide
         });
         const old = node.data.lifeSpan * 10;
-        const geometry = node.data.type === 'CONTAINER' ? this.createContainerGeometry(node as Street)
-            : new THREE.BoxGeometry(length, 20, width).translate(0, 10, 0);
+        let geometry: THREE.Geometry;
+        switch (node.data.type) {
+            case 'CLASS':
+                geometry = new THREE.BoxGeometry(length, 20, width).translate(0, 10, 0);;
+                break;
+            case 'INTERFACE':
+                const rad = node.width / 2;
+                geometry = new THREE.CylinderGeometry(rad, rad, 20, 32, 32);
+                break;
+            case 'CONTAINER':
+                geometry = this.createContainerGeometry(node as Street);
+                break;
+
+        }
         geometry.rotateY(-direction)
             .translate(
                 x0 + (Math.cos(direction) * length - Math.sin(direction) * width) / 2,
