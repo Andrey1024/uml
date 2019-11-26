@@ -109,14 +109,10 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         // lights[4].position.set(-this.citySize - 200, 600, 200);
         // this.scene.add(...lights);
         this.scene.add(directionalLight);
-        this.scene.add(new THREE.CameraHelper(directionalLight.shadow.camera));
         // this.scene.add(dirLight);
         this.scene.add(directionalLight.target);
         // this.scene.add(dirLight.target);
-        this.scene.add(new THREE.DirectionalLightHelper(directionalLight, 10));
-        this.scene.add(new THREE.DirectionalLightHelper(dirLight, 10));
         // this.scene.add(ambientLight);
-        this.scene.add(...lights.map(light => new THREE.PointLightHelper(light, 1)));
         this.animate();
     }
 

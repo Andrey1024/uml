@@ -3,22 +3,32 @@ import { LayoutService } from './layout.service';
 import { Element } from '../model/element.model';
 import * as THREE from 'three';
 
-interface FlatStreet {
-    width: number;
-    height: number;
+interface Base {
+    side?: 'left' | 'right';
     data: Element;
-    depth: number;
-    children?: FlatStreet[];
-    left?: number;
-    right?: number;
+    offset?: number;
+    width: number;
+    length: number;
 }
 
+interface Building extends Base {
+    height?: number;
+}
+
+interface Street extends Base {
+    children: Array<Street | Building>;
+    left: number;
+    right: number;
+    segments: { length: number; age: number; }[];
+}
+
+type StreetElement = Street | Building;
 
 @Injectable()
 export class StreetsService implements LayoutService {
     readonly name = 'Evo Streets';
 
-    readonly padding = 5;
+    readonly padding = 20;
 
     private static closeValue(value: number, ...steps: number[]): number {
         let i = 0;
@@ -34,23 +44,20 @@ export class StreetsService implements LayoutService {
 
     place(hierarchy: Element): THREE.Object3D[] {
         const flat = this.flat(hierarchy);
-        return this.computePositions(flat, { x: 0, y: -flat.right }, 0);
+        return this.computePositions(flat, { x: 0, y: -(<Street>flat).right }, 0);
     }
 
-    private flat(el: Element, depth = 0): FlatStreet {
+    private flat(el: Element, depth = 0): StreetElement {
         switch (el.type) {
             case 'CLASS':
             case 'INTERFACE':
                 const size = StreetsService.closeValue(el.methodsCount, 10, 20, 30, 40, 50) * 2;
-                return {
-                    width: size, height: size, data: el, depth
-                };
+                return { width: size, length: size, data: el, offset: 0 };
             case 'ENUM':
-                return {
-                    width: 15, height: 15, data: el, depth
-                };
+                return { width: 15, length: 15, data: el, offset: 0 };
             case 'CONTAINER':
-                const sorted = el.children
+                const segments: { length: number; age: number; }[] = [];
+                const children = el.children
                     .sort((a, b) => {
                         if (a.lifeSpan < b.lifeSpan) {
                             return 1;
@@ -61,74 +68,138 @@ export class StreetsService implements LayoutService {
                         }
                     })
                     .map(e => this.flat(e as Element, depth + 1));
-                const odd = sorted.filter((_, i) => i % 2 === 1);
-                const even = sorted.filter((_, i) => i % 2 === 0);
-                const height = Math.max(
-                    odd.reduce((sum, val) => sum + val.width + this.padding, 0),
-                    even.reduce((sum, val) => sum + val.width + this.padding, 0),
-                    0
-                );
-                const left = Math.max(...even.map(c => c.height), 0);
-                const right = Math.max(...odd.map(c => c.height), 0);
-                return {
-                    left, right,
-                    width: left + 30 / (depth + 1) + right,
-                    height, children: sorted, data: el, depth
-                };
+                let leftOffset = this.padding, rightOffset = this.padding, age = el.lifeSpan, lastSpan = 0;
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    if (child.data.lifeSpan < age) {
+                        leftOffset = rightOffset = Math.max(leftOffset, rightOffset);
+                        segments.push({ length: leftOffset - lastSpan, age });
+                        age = child.data.lifeSpan;
+                        lastSpan = leftOffset + this.padding;
+                    }
 
+                    if (leftOffset <= rightOffset) {
+                        leftOffset += child.width + this.padding;
+                        child.side = 'left';
+                        child.offset = leftOffset;
+                    } else {
+                        child.side = 'right';
+                        child.offset = rightOffset;
+                        rightOffset += child.width + this.padding;
+                    }
+                }
+                const length = Math.max(leftOffset, rightOffset, 0) + this.padding;
+                segments.push({ length: length - lastSpan, age });
+                const left = Math.max(...children.filter(child => child.side === 'left').map(c => c.length), 0);
+                const right = Math.max(...children.filter(child => child.side === 'right').map(c => c.length), 0);
+                return {
+                    left, right, length,
+                    width: left + 30 / (depth + 1) + right, children, data: el, segments
+                };
         }
     }
 
-    private computePositions(el: FlatStreet, position: { x: number, y: number }, direction: number): THREE.Object3D[] {
+    private computePositions(el: StreetElement, position: { x: number, y: number }, direction: number): THREE.Object3D[] {
         switch (el.data.type) {
             case 'CLASS':
             case 'ENUM':
             case 'INTERFACE':
-                return [this.createNodeMesh(el.data, position.x, position.y, el.width, el.height, direction)];
+                return [this.createNodeMesh(el, position.x, position.y, el.width, el.length, direction)];
             case 'CONTAINER':
+                const street = el as Street;
                 const objects = [];
-                const odd = el.children.filter((_, i) => i % 2 === 1);
-                const even = el.children.filter((_, i) => i % 2 === 0);
                 objects.push(this.createNodeMesh(
-                    el.data,
-                    position.x - el.right * Math.sin(direction),
-                    position.y + el.right * Math.cos(direction),
-                    el.width - el.left - el.right, el.height, direction
+                    street,
+                    position.x - street.right * Math.sin(direction),
+                    position.y + street.right * Math.cos(direction),
+                    street.width - street.left - street.right, street.length, direction
                 ));
-                for (let i = 0, offset = 0; i < even.length; i++) {
-                    offset += even[i].width + this.padding;
-                    objects.push(...this.computePositions(even[i], {
-                        x: position.x - (el.width - el.left) * Math.sin(direction) + offset * Math.cos(direction),
-                        y: position.y + (el.width - el.left) * Math.cos(direction) + offset * Math.sin(direction)
-                    }, direction + Math.PI / 2));
-                }
-                for (let i = 0, offset = this.padding; i < odd.length; i++) {
-                    objects.push(...this.computePositions(odd[i], {
-                        x: position.x - el.right * Math.sin(direction) + offset * Math.cos(direction),
-                        y: position.y + el.right * Math.cos(direction) + offset * Math.sin(direction)
-                    }, direction - Math.PI / 2));
-                    offset += this.padding + odd[i].width;
+                for (let i = 0; i < street.children.length; i++) {
+                    const child = street.children[i];
+                    if (child.side === 'left') {
+                        objects.push(...this.computePositions(child, {
+                            x: position.x - (street.width - street.left) * Math.sin(
+                                direction) + child.offset * Math.cos(direction),
+                            y: position.y + (street.width - street.left) * Math.cos(
+                                direction) + child.offset * Math.sin(direction)
+                        }, direction + Math.PI / 2));
+                    } else {
+                        objects.push(...this.computePositions(child, {
+                            x: position.x - street.right * Math.sin(direction) + child.offset * Math.cos(
+                                direction),
+                            y: position.y + street.right * Math.cos(direction) + child.offset * Math.sin(
+                                direction)
+                        }, direction - Math.PI / 2));
+                    }
                 }
                 return objects;
         }
 
     }
 
-    private createNodeMesh(node: Element, x0: number, y0: number, width: number, height: number, direction: number): THREE.Object3D {
-        const color = node.type === 'CONTAINER' ? new THREE.Color('yellow') : new THREE.Color('green');
+    private createNodeMesh(node: StreetElement, x0: number, y0: number, width: number, length: number, direction: number): THREE.Object3D {
+        const color = node.data.type === 'CONTAINER' ? new THREE.Color('yellow') : new THREE.Color('green');
         const material = new THREE.MeshPhongMaterial({
-            color
+            color, side: THREE.DoubleSide
         });
-        const old = 10 + node.lifeSpan * 10;
-        const geometry = new THREE.BoxGeometry(height, old, width)
-            .rotateY(direction)
+        const old = node.data.lifeSpan * 10;
+        const geometry = node.data.type === 'CONTAINER' ? this.createContainerGeometry(node as Street)
+            : new THREE.BoxGeometry(length, 20, width).translate(0, 10, 0);
+        geometry.rotateY(-direction)
             .translate(
-                x0 + (Math.cos(direction) * height - Math.sin(direction) * width) / 2,
-                old / 2,
-                y0 + (Math.cos(direction) * width + Math.sin(direction) * height) / 2
+                x0 + (Math.cos(direction) * length - Math.sin(direction) * width) / 2,
+                old,
+                y0 + (Math.cos(direction) * width + Math.sin(direction) * length) / 2
             );
         const mesh = new THREE.Mesh(geometry, material);
-        mesh['rawObject'] = node;
+        mesh['rawObject'] = node.data;
         return mesh;
+    }
+
+    private createContainerGeometry(node: Street) {
+        const geometry = new THREE.Geometry();
+        const width = node.width - node.left - node.right;
+
+        let offset = -node.length / 2;
+        for (let i = 0; i < node.segments.length; i++) {
+            const segment = node.segments[i];
+            const plane = new THREE.Geometry();
+            const z = -(node.data.lifeSpan - segment.age) * 10;
+            plane.vertices.push(
+                new THREE.Vector3(offset, z, -width / 2),
+                new THREE.Vector3(offset, z, width / 2),
+                new THREE.Vector3(offset + segment.length, z, width / 2),
+                new THREE.Vector3(offset + segment.length, z, -width / 2),
+            );
+            plane.faces.push(new THREE.Face3(0, 1, 2), new THREE.Face3(2, 3, 0));
+            geometry.merge(plane);
+            offset += segment.length;
+
+            if (i + 1 < node.segments.length) {
+                const bridge = new THREE.Geometry();
+                const vertices = [
+                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 10,
+                        -width / 2
+                    ),
+                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 10,
+                        width / 2
+                    ),
+                    new THREE.Vector3(offset + this.padding,
+                        -(node.data.lifeSpan - node.segments[i + 1].age) * 10, width / 2
+                    ),
+                    new THREE.Vector3(offset + this.padding,
+                        -(node.data.lifeSpan - node.segments[i + 1].age) * 10, -width / 2
+                    ),
+                ];
+                offset += this.padding;
+
+                bridge.vertices.push(...vertices);
+                bridge.faces.push(new THREE.Face3(0, 1, 2), new THREE.Face3(2, 3, 0));
+                geometry.merge(bridge);
+
+            }
+        }
+        geometry.computeFaceNormals();
+        return geometry;
     }
 }
