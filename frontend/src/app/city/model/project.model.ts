@@ -1,7 +1,7 @@
 import { Container } from './container.model';
 
-export interface ProjectStructure {
+export interface Project {
     name: string;
     version: string;
-    data: Container;
+    data: Container[];
 }

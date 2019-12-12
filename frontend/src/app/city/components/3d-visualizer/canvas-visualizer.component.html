@@ -1,5 +1,5 @@
 <mat-form-field>
-    <mat-label>Версия</mat-label>
+    <mat-label>SourceRoot</mat-label>
     <mat-select [formControl]="selectedVersion">
         <mat-option *ngFor="let ver of versions | async" [value]="ver">{{ ver }}</mat-option>
     </mat-select>

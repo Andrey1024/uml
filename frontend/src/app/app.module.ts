@@ -9,13 +9,15 @@ import { FontService } from './city/service/font.service';
 import { LayoutService } from './city/service/layout.service';
 import { CityService } from './city/service/city.service';
 import { StreetsService } from './city/service/streets.service';
+import { NgxsModule } from "@ngxs/store";
 
 @NgModule({
     imports: [
         BrowserModule,
         HttpClientModule,
         CityModule,
-        BrowserAnimationsModule
+        BrowserAnimationsModule,
+        NgxsModule.forRoot()
     ],
     declarations: [
         AppComponent
@@ -27,8 +29,8 @@ import { StreetsService } from './city/service/streets.service';
             deps: [FontService],
             multi: true
         },
-        { provide: LayoutService, useClass: CityService, multi: true},
-        { provide: LayoutService, useClass: StreetsService, multi: true},
+        { provide: LayoutService, useClass: CityService, multi: true },
+        { provide: LayoutService, useClass: StreetsService, multi: true },
     ],
     bootstrap: [AppComponent]
 })

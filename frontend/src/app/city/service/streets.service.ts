@@ -55,7 +55,7 @@ export class StreetsService implements LayoutService {
                 return { width: size, length: size, data: el, offset: 0 };
             case 'ENUM':
                 return { width: 15, length: 15, data: el, offset: 0 };
-            case 'CONTAINER':
+            case 'PACKAGE':
                 const segments: { length: number; age: number; }[] = [];
                 const children = el.children
                     .sort((a, b) => {
@@ -72,23 +72,23 @@ export class StreetsService implements LayoutService {
                 for (let i = 0; i < children.length; i++) {
                     const child = children[i];
                     if (child.data.lifeSpan < age) {
-                        leftOffset = rightOffset = Math.max(leftOffset, rightOffset);
-                        segments.push({ length: leftOffset - lastSpan, age });
+                        const maxOffset = Math.max(leftOffset, rightOffset);
+                        segments.push({ length: maxOffset - lastSpan, age });
                         age = child.data.lifeSpan;
-                        lastSpan = leftOffset + this.padding;
+                        lastSpan = leftOffset = rightOffset = maxOffset + this.padding;
                     }
 
                     if (leftOffset <= rightOffset) {
-                        leftOffset += child.width + this.padding;
                         child.side = 'left';
-                        child.offset = leftOffset;
+                        child.offset = leftOffset + child.width;
+                        leftOffset += child.width + this.padding;
                     } else {
                         child.side = 'right';
                         child.offset = rightOffset;
                         rightOffset += child.width + this.padding;
                     }
                 }
-                const length = Math.max(leftOffset, rightOffset, 0) + this.padding;
+                const length = Math.max(leftOffset, rightOffset, 0);
                 segments.push({ length: length - lastSpan, age });
                 const left = Math.max(...children.filter(child => child.side === 'left').map(c => c.length), 0);
                 const right = Math.max(...children.filter(child => child.side === 'right').map(c => c.length), 0);
@@ -105,7 +105,7 @@ export class StreetsService implements LayoutService {
             case 'ENUM':
             case 'INTERFACE':
                 return [this.createNodeMesh(el, position.x, position.y, el.width, el.length, direction)];
-            case 'CONTAINER':
+            case 'PACKAGE':
                 const street = el as Street;
                 const objects = [];
                 objects.push(this.createNodeMesh(
@@ -138,21 +138,23 @@ export class StreetsService implements LayoutService {
     }
 
     private createNodeMesh(node: StreetElement, x0: number, y0: number, width: number, length: number, direction: number): THREE.Object3D {
-        const color = node.data.type === 'CONTAINER' ? new THREE.Color('yellow') : new THREE.Color('green');
+        const color = node.data.type === 'PACKAGE' ? new THREE.Color('yellow') : new THREE.Color('green');
         const material = new THREE.MeshPhongMaterial({
             color, side: THREE.DoubleSide
         });
-        const old = node.data.lifeSpan * 10;
+        const old = node.data.lifeSpan * 5;
         let geometry: THREE.Geometry;
         switch (node.data.type) {
+            default:
             case 'CLASS':
                 geometry = new THREE.BoxGeometry(length, 20, width).translate(0, 10, 0);;
                 break;
             case 'INTERFACE':
                 const rad = node.width / 2;
-                geometry = new THREE.CylinderGeometry(rad, rad, 20, 32, 32);
+                geometry = new THREE.CylinderGeometry(rad, rad, 20, 32, 32)
+                    .translate(0, 10, 0);
                 break;
-            case 'CONTAINER':
+            case 'PACKAGE':
                 geometry = this.createContainerGeometry(node as Street);
                 break;
 
@@ -176,7 +178,7 @@ export class StreetsService implements LayoutService {
         for (let i = 0; i < node.segments.length; i++) {
             const segment = node.segments[i];
             const plane = new THREE.Geometry();
-            const z = -(node.data.lifeSpan - segment.age) * 10;
+            const z = -(node.data.lifeSpan - segment.age) * 5;
             plane.vertices.push(
                 new THREE.Vector3(offset, z, -width / 2),
                 new THREE.Vector3(offset, z, width / 2),
@@ -190,17 +192,17 @@ export class StreetsService implements LayoutService {
             if (i + 1 < node.segments.length) {
                 const bridge = new THREE.Geometry();
                 const vertices = [
-                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 10,
+                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 5,
                         -width / 2
                     ),
-                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 10,
+                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 5,
                         width / 2
                     ),
                     new THREE.Vector3(offset + this.padding,
-                        -(node.data.lifeSpan - node.segments[i + 1].age) * 10, width / 2
+                        -(node.data.lifeSpan - node.segments[i + 1].age) * 5, width / 2
                     ),
                     new THREE.Vector3(offset + this.padding,
-                        -(node.data.lifeSpan - node.segments[i + 1].age) * 10, -width / 2
+                        -(node.data.lifeSpan - node.segments[i + 1].age) * 5, -width / 2
                     ),
                 ];
                 offset += this.padding;

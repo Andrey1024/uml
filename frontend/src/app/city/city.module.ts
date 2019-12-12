@@ -1,12 +1,21 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { VisualizerComponent } from './components/visualizer/visualizer.component';
+import { CanvasVisualizerComponent } from './components/3d-visualizer/canvas-visualizer.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MatButtonToggleModule, MatFormFieldModule, MatSelectModule, MatTabsModule } from '@angular/material';
+import {
+    MatButtonToggleModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatTabsModule,
+    MatTreeModule
+} from '@angular/material';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
 import { ThreeDirective } from './directives/three.directive';
+import { TreeVisualizerComponent } from './components/tree-visualizer/tree-visualizer.component';
+import {NgxsModule} from "@ngxs/store";
+import {CodeStructureState} from "./state/code-structure.state";
 
 @NgModule({
     imports: [
@@ -17,18 +26,21 @@ import { ThreeDirective } from './directives/three.directive';
         OverlayModule,
         PortalModule,
         MatTabsModule,
-        MatButtonToggleModule
+        MatButtonToggleModule,
+        MatTreeModule,
+        NgxsModule.forFeature([CodeStructureState])
     ],
     declarations: [
-        VisualizerComponent,
+        CanvasVisualizerComponent,
         TooltipComponent,
         ThreeDirective,
+        TreeVisualizerComponent,
     ],
     entryComponents: [
         TooltipComponent
     ],
     exports: [
-        VisualizerComponent,
+        CanvasVisualizerComponent,
     ]
 })
 export class CityModule {

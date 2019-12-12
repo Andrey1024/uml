@@ -77,7 +77,7 @@ export class CityService implements LayoutService {
         let height = 0;
 
         switch (node.data.type) {
-            case 'CONTAINER':
+            case 'PACKAGE':
                 height = 15;
                 break;
             case 'CLASS':
@@ -118,7 +118,7 @@ export class CityService implements LayoutService {
 
     private createTitleMesh(node: HierarchyCityNode): THREE.Mesh {
         if (!node.data.name
-            || node.data.type !== 'CONTAINER'
+            || node.data.type !== 'PACKAGE'
             || (node.x1 - node.x0) < 5 * node.data.name.length) {
             return;
         }
