@@ -1,7 +1,8 @@
 import { Element } from '../model/element.model';
 import * as THREE from 'three';
+import { Hierarchy } from "../model/hierarchy.model";
 
 export abstract class LayoutService {
     name: string;
-    place: (hierarchy: Element) => THREE.Object3D[];
+    place: (hierarchy: Hierarchy) => THREE.Object3D[];
 }

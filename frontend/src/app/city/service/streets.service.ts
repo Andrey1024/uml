@@ -2,10 +2,12 @@ import { Injectable } from '@angular/core';
 import { LayoutService } from './layout.service';
 import { Element } from '../model/element.model';
 import * as THREE from 'three';
+import { Hierarchy } from "../model/hierarchy.model";
+import { first, last, map, mapValues } from "lodash-es";
+import { TemplateGuardMeta } from "@angular/compiler-cli/src/ngtsc/metadata";
 
 interface Base {
     side?: 'left' | 'right';
-    data: Element;
     offset?: number;
     width: number;
     length: number;
@@ -13,13 +15,24 @@ interface Base {
 
 interface Building extends Base {
     height?: number;
+    data: Element;
 }
 
 interface Street extends Base {
     children: Array<Street | Building>;
+    data: string;
     left: number;
     right: number;
     segments: { length: number; age: number; }[];
+}
+
+interface UserData {
+    width: number;
+    height: number;
+    length: number;
+    lifeSpan: number;
+    name: string;
+    data: { type: string, name: string };
 }
 
 type StreetElement = Street | Building;
@@ -29,6 +42,7 @@ export class StreetsService implements LayoutService {
     readonly name = 'Evo Streets';
 
     readonly padding = 20;
+
 
     private static closeValue(value: number, ...steps: number[]): number {
         let i = 0;
@@ -42,178 +56,162 @@ export class StreetsService implements LayoutService {
         return steps[i];
     }
 
-    place(hierarchy: Element): THREE.Object3D[] {
-        const flat = this.flat(hierarchy);
-        return this.computePositions(flat, { x: 0, y: -(<Street>flat).right }, 0);
+    place(hierarchy: Hierarchy): THREE.Object3D[] {
+        const res = this.process(hierarchy);
+        res.updateMatrixWorld();
+        return [res];
     }
 
-    private flat(el: Element, depth = 0): StreetElement {
+    private process(hierarchy: any, name: string = '', depth = 1): THREE.Object3D {
+        return hierarchy.type
+            ? this.createElementMesh(hierarchy)
+            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k, depth + 1)), name, depth);
+    }
+
+    private getElementProps(el: Element): { width: number, height: number } {
         switch (el.type) {
-            case 'CLASS':
-            case 'INTERFACE':
-                const size = StreetsService.closeValue(el.methodsCount, 10, 20, 30, 40, 50) * 2;
-                return { width: size, length: size, data: el, offset: 0 };
-            case 'ENUM':
-                return { width: 15, length: 15, data: el, offset: 0 };
-            case 'PACKAGE':
-                const segments: { length: number; age: number; }[] = [];
-                const children = el.children
-                    .sort((a, b) => {
-                        if (a.lifeSpan < b.lifeSpan) {
-                            return 1;
-                        } else if (a.lifeSpan > b.lifeSpan) {
-                            return -1;
-                        } else {
-                            return a.name.localeCompare(b.name);
-                        }
-                    })
-                    .map(e => this.flat(e as Element, depth + 1));
-                let leftOffset = this.padding, rightOffset = this.padding, age = el.lifeSpan, lastSpan = 0;
-                for (let i = 0; i < children.length; i++) {
-                    const child = children[i];
-                    if (child.data.lifeSpan < age) {
-                        const maxOffset = Math.max(leftOffset, rightOffset);
-                        segments.push({ length: maxOffset - lastSpan, age });
-                        age = child.data.lifeSpan;
-                        lastSpan = leftOffset = rightOffset = maxOffset + this.padding;
-                    }
-
-                    if (leftOffset <= rightOffset) {
-                        child.side = 'left';
-                        child.offset = leftOffset + child.width;
-                        leftOffset += child.width + this.padding;
-                    } else {
-                        child.side = 'right';
-                        child.offset = rightOffset;
-                        rightOffset += child.width + this.padding;
-                    }
-                }
-                const length = Math.max(leftOffset, rightOffset, 0);
-                segments.push({ length: length - lastSpan, age });
-                const left = Math.max(...children.filter(child => child.side === 'left').map(c => c.length), 0);
-                const right = Math.max(...children.filter(child => child.side === 'right').map(c => c.length), 0);
+            case "CLASS":
+            case "INTERFACE":
                 return {
-                    left, right, length,
-                    width: left + 30 / (depth + 1) + right, children, data: el, segments
+                    width: StreetsService.closeValue(el.methodsCount, 10, 20, 30, 40, 50) * 2,
+                    height: 10
                 };
-        }
-    }
-
-    private computePositions(el: StreetElement, position: { x: number, y: number }, direction: number): THREE.Object3D[] {
-        switch (el.data.type) {
-            case 'CLASS':
-            case 'ENUM':
-            case 'INTERFACE':
-                return [this.createNodeMesh(el, position.x, position.y, el.width, el.length, direction)];
-            case 'PACKAGE':
-                const street = el as Street;
-                const objects = [];
-                objects.push(this.createNodeMesh(
-                    street,
-                    position.x - street.right * Math.sin(direction),
-                    position.y + street.right * Math.cos(direction),
-                    street.width - street.left - street.right, street.length, direction
-                ));
-                for (let i = 0; i < street.children.length; i++) {
-                    const child = street.children[i];
-                    if (child.side === 'left') {
-                        objects.push(...this.computePositions(child, {
-                            x: position.x - (street.width - street.left) * Math.sin(
-                                direction) + child.offset * Math.cos(direction),
-                            y: position.y + (street.width - street.left) * Math.cos(
-                                direction) + child.offset * Math.sin(direction)
-                        }, direction + Math.PI / 2));
-                    } else {
-                        objects.push(...this.computePositions(child, {
-                            x: position.x - street.right * Math.sin(direction) + child.offset * Math.cos(
-                                direction),
-                            y: position.y + street.right * Math.cos(direction) + child.offset * Math.sin(
-                                direction)
-                        }, direction - Math.PI / 2));
-                    }
+            default:
+                return {
+                    width: 10, height: 10
                 }
-                return objects;
         }
-
     }
 
-    private createNodeMesh(node: StreetElement, x0: number, y0: number, width: number, length: number, direction: number): THREE.Object3D {
-        const color = node.data.type === 'PACKAGE' ? new THREE.Color('yellow') : new THREE.Color('green');
+    private createElementMesh(node: Element): THREE.Object3D {
+        const props = this.getElementProps(node);
+        const color = new THREE.Color('green');
         const material = new THREE.MeshPhongMaterial({
             color, side: THREE.DoubleSide
         });
-        const old = node.data.lifeSpan * 5;
+        const old = node.lifeSpan * 5;
         let geometry: THREE.Geometry;
-        switch (node.data.type) {
+        switch (node.type) {
             default:
             case 'CLASS':
-                geometry = new THREE.BoxGeometry(length, 20, width).translate(0, 10, 0);;
+                geometry = new THREE.BoxGeometry(props.width, props.height, props.width)
+                    .translate(0, node.lifeSpan * 5, 0);
                 break;
             case 'INTERFACE':
-                const rad = node.width / 2;
-                geometry = new THREE.CylinderGeometry(rad, rad, 20, 32, 32)
-                    .translate(0, 10, 0);
+                const rad = props.width / 2;
+                geometry = new THREE.CylinderGeometry(rad, rad, props.height, 32, 32);
                 break;
-            case 'PACKAGE':
-                geometry = this.createContainerGeometry(node as Street);
-                break;
-
         }
-        geometry.rotateY(-direction)
-            .translate(
-                x0 + (Math.cos(direction) * length - Math.sin(direction) * width) / 2,
-                old,
-                y0 + (Math.cos(direction) * width + Math.sin(direction) * length) / 2
-            );
         const mesh = new THREE.Mesh(geometry, material);
-        mesh['rawObject'] = node.data;
+        mesh.matrixAutoUpdate = false;
+        mesh.userData = <UserData>{
+            width: props.width,
+            length: props.width,
+            lifeSpan: node.lifeSpan,
+            name: node.fullPath,
+            height: props.height,
+            data: node
+        };
         return mesh;
     }
 
-    private createContainerGeometry(node: Street) {
-        const geometry = new THREE.Geometry();
-        const width = node.width - node.left - node.right;
+    private createPackageMesh(objects: THREE.Object3D[], name: string, depth: number): THREE.Object3D {
+        const packageGroup = new THREE.Group();
+        packageGroup.matrixAutoUpdate = false;
+        packageGroup.matrixWorldNeedsUpdate = true;
+        const children = objects.sort((a, b) => {
+            if (a.userData.lifeSpan < b.userData.lifeSpan) {
+                return 1;
+            } else if (a.userData.lifeSpan > b.userData.lifeSpan) {
+                return -1;
+            } else {
+                return a.userData.name.localeCompare(b.userData.name);
+            }
+        });
 
-        let offset = -node.length / 2;
-        for (let i = 0; i < node.segments.length; i++) {
-            const segment = node.segments[i];
+        const geometry = new THREE.Geometry();
+        const width = 30 / depth + 1;
+
+        const createSegment = (offset: number, length: number, level: number) => {
+
             const plane = new THREE.Geometry();
-            const z = -(node.data.lifeSpan - segment.age) * 5;
             plane.vertices.push(
-                new THREE.Vector3(offset, z, -width / 2),
-                new THREE.Vector3(offset, z, width / 2),
-                new THREE.Vector3(offset + segment.length, z, width / 2),
-                new THREE.Vector3(offset + segment.length, z, -width / 2),
+                new THREE.Vector3(offset, level, -width / 2),
+                new THREE.Vector3(offset, level, width / 2),
+                new THREE.Vector3(offset + length, level, width / 2),
+                new THREE.Vector3(offset + length, level, -width / 2)
             );
             plane.faces.push(new THREE.Face3(0, 1, 2), new THREE.Face3(2, 3, 0));
-            geometry.merge(plane);
-            offset += segment.length;
+            return plane;
+        };
 
-            if (i + 1 < node.segments.length) {
-                const bridge = new THREE.Geometry();
-                const vertices = [
-                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 5,
-                        -width / 2
-                    ),
-                    new THREE.Vector3(offset, -(node.data.lifeSpan - segment.age) * 5,
-                        width / 2
-                    ),
-                    new THREE.Vector3(offset + this.padding,
-                        -(node.data.lifeSpan - node.segments[i + 1].age) * 5, width / 2
-                    ),
-                    new THREE.Vector3(offset + this.padding,
-                        -(node.data.lifeSpan - node.segments[i + 1].age) * 5, -width / 2
-                    ),
-                ];
-                offset += this.padding;
+        const createBridge = (offset, fromHeight: number, toHeight: number) => {
+            const bridge = new THREE.Geometry();
+            bridge.vertices.push(
+                new THREE.Vector3(offset, fromHeight, -width / 2),
+                new THREE.Vector3(offset, fromHeight, width / 2),
+                new THREE.Vector3(offset + this.padding, toHeight, width / 2),
+                new THREE.Vector3(offset + this.padding, toHeight, -width / 2)
+            );
+            bridge.faces.push(new THREE.Face3(0, 1, 2), new THREE.Face3(2, 3, 0));
+            return bridge;
+        };
 
-                bridge.vertices.push(...vertices);
-                bridge.faces.push(new THREE.Face3(0, 1, 2), new THREE.Face3(2, 3, 0));
-                geometry.merge(bridge);
 
+        let leftOffset = this.padding, rightOffset = this.padding, lastAge = 0, lastSegment = 0, left = 0, right = 0;
+        for (let i = 0; i < children.length; i++) {
+            const childData = children[i].userData as UserData;
+            if (childData.lifeSpan < lastAge) {
+                const maxOffset = Math.max(leftOffset, rightOffset);
+                geometry.merge(createSegment(lastSegment, maxOffset - lastSegment, lastAge * 5));
+                geometry.merge(createBridge(maxOffset, lastAge * 5, childData.lifeSpan * 5));
+                lastSegment = leftOffset = rightOffset = maxOffset + this.padding;
             }
+
+            if (leftOffset <= rightOffset) {
+                children[i].applyMatrix(new THREE.Matrix4()
+                    .makeTranslation((childData.length + width) / 2, childData.height / 2, leftOffset + childData.width / 2));
+                children[i].applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 2));
+                leftOffset += childData.width + this.padding;
+                left = Math.max(left, childData.length);
+            } else {
+                children[i].applyMatrix(new THREE.Matrix4()
+                    .makeTranslation((childData.length + width) / 2, childData.height / 2, -rightOffset - childData.width / 2));
+                children[i].applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI / 2));
+                rightOffset += childData.width + this.padding;
+                right = Math.max(right, childData.length);
+            }
+            children[i].matrixWorldNeedsUpdate = true;
+            lastAge = childData.lifeSpan;
         }
+
+        const lifeSpan = first(children).userData.lifeSpan;
+        const length = Math.max(leftOffset, rightOffset) + this.padding;
+        geometry.merge(createSegment(lastSegment, length - lastSegment, lastAge * 5));
         geometry.computeFaceNormals();
-        return geometry;
+
+
+        const color = new THREE.Color('yellow');
+        const material = new THREE.MeshPhongMaterial({
+            color, side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.matrixAutoUpdate = false;
+        mesh.matrixWorldNeedsUpdate = true;
+        mesh.userData = { data: { type: 'PACKAGE', name } };
+        packageGroup.add(mesh, ...children);
+        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, -(lifeSpan - lastAge) * 2.5, (left - right) / 2));
+
+
+        packageGroup.userData = <UserData>{
+            width: width + left + right,
+            length,
+            height: (lifeSpan - lastAge) * 5,
+            lifeSpan,
+            name,
+            data: { type: 'PACKAGE', name }
+        };
+
+        return packageGroup;
     }
 }

@@ -111,9 +111,10 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         this.scene.add(directionalLight);
         // this.scene.add(dirLight);
         this.scene.add(directionalLight.target);
+
+        this.scene.add(new THREE.AxesHelper( 100 ))
         // this.scene.add(dirLight.target);
         // this.scene.add(ambientLight);
-        this.animate();
     }
 
     @HostListener('window:resize', ['$event'])
@@ -194,6 +195,7 @@ export class ThreeDirective implements OnChanges, OnDestroy {
             }
             if (this.objects && this.objects.length) {
                 this.scene.add(...this.objects);
+                this.animate();
             }
         }
     }
@@ -215,6 +217,11 @@ export class ThreeDirective implements OnChanges, OnDestroy {
 
     }
 
+    // getIntersected(rayCaster: THREE.Raycaster, objects = this.objects): THREE.Object3D {
+    //     const intersected = [];
+    //
+    // }
+
     private animate() {
         this.animationFrame = requestAnimationFrame(() => this.animate());
 
@@ -223,8 +230,9 @@ export class ThreeDirective implements OnChanges, OnDestroy {
 
         this.rayCaster.setFromCamera(this.mouse, this.camera);
 
+        const intersects = this.rayCaster.intersectObjects(this.objects, true);
         // calculate objects intersecting the picking ray
-        const intersects = this.rayCaster.intersectObjects(this.scene.children);
+        // this.objects[0].ra
 
         if (this.intersected !== null) {
             this.intersected['material'].color.setHex(this.intersected['savedColor']);
@@ -236,7 +244,7 @@ export class ThreeDirective implements OnChanges, OnDestroy {
             this.intersected = intersects[0].object;
             this.intersected['savedColor'] = this.intersected['material'].color.getHex();
             this.intersected['material'].color.setHex(0xff0000);
-            this.tooltipComponent.instance.object = this.intersected['rawObject'];
+            this.tooltipComponent.instance.object = this.intersected.userData.data;
             this.tooltipOverlay.updatePosition();
         } else {
             this.tooltipOverlay.detach();

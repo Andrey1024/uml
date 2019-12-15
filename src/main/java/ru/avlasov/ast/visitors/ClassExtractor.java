@@ -3,22 +3,25 @@ package ru.avlasov.ast.visitors;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+import ru.avlasov.ast.nodes.AbstractNode;
+import ru.avlasov.ast.nodes.ClassNode;
+import ru.avlasov.ast.nodes.EnumNode;
+import ru.avlasov.ast.nodes.InterfaceNode;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-public class ClassExtractor extends VoidVisitorAdapter<Map<String, List<ResolvedReferenceTypeDeclaration>>> {
+public class ClassExtractor extends VoidVisitorAdapter<List<AbstractNode>> {
 
     @Override
-    public void visit(ClassOrInterfaceDeclaration expr, Map<String, List<ResolvedReferenceTypeDeclaration>> types) {
+    public void visit(ClassOrInterfaceDeclaration expr, List<AbstractNode> types) {
         super.visit(expr, types);
-        ResolvedReferenceTypeDeclaration declaration = expr.resolve();
-
-
-        if (!types.containsKey(declaration.getPackageName())) {
-            types.put(declaration.getPackageName(), new ArrayList<>());
+        ResolvedReferenceTypeDeclaration type = expr.resolve();
+        if (type.isInterface()) {
+            types.add(new InterfaceNode(type.asInterface()));
+        } else if (type.isClass()) {
+            types.add(new ClassNode(type.asClass()));
+        } else if (type.isEnum()) {
+            types.add(new EnumNode(type.asEnum()));
         }
-        types.get(declaration.getPackageName()).add(declaration);
     }
 }

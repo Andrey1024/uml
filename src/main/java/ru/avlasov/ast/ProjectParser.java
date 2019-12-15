@@ -40,8 +40,8 @@ public class ProjectParser {
     }
 
     private PackageNode parseSourceRoot(SourceRoot sourceRoot) {
-        Map<String, List<ResolvedReferenceTypeDeclaration>> types = new HashMap<>();
-        Map<String, PackageTree> packageMap = new HashMap<>();
+        List<AbstractNode> types = new ArrayList<>();
+//        Map<String, PackageTree> packageMap = new HashMap<>();
 
         List<ParseResult<CompilationUnit>> results = null;
         try {
@@ -52,15 +52,18 @@ public class ProjectParser {
 
         results.stream().map(ParseResult::getResult).map(Optional::get)
                 .forEach(compilationUnit -> compilationUnit.accept(new ClassExtractor(), types));
-        results.stream().map(ParseResult::getResult).map(Optional::get)
-                .forEach(compilationUnit -> compilationUnit.accept(new PackageExtractor(), packageMap));
+//        results.stream().map(ParseResult::getResult).map(Optional::get)
+//                .forEach(compilationUnit -> compilationUnit.accept(new PackageExtractor(), packageMap));
 //        PackageTree rootPack = new PackageTree(types.keySet().stream()
 //                .distinct().reduce((s1, s2) -> StringUtils.getCommonPrefix(s1, s2).replaceAll("\\.$", "")).orElse(""));
-        PackageTree rootPack = new PackageTree(StringUtils.difference(this.projectRoot.getRoot().toString(), sourceRoot.getRoot().toString()));
-        rootPack.getChildren().addAll(packageMap.values().stream().filter(packageTree -> packageTree.getParent() == null)
-                .peek(child -> child.setParent(rootPack)).collect(Collectors.toList()));
-        packageMap.put(rootPack.getName(), rootPack);
-        return PackageNode.createPackage(rootPack, types);
+//        PackageTree rootPack = new PackageTree(StringUtils.difference(this.projectRoot.getRoot().toString(), sourceRoot.getRoot().toString()));
+//        rootPack.getChildren().addAll(packageMap.values().stream().filter(packageTree -> packageTree.getParent() == null)
+//                .peek(child -> child.setParent(rootPack)).collect(Collectors.toList()));
+//        packageMap.put(rootPack.getName(), rootPack);
+        return new PackageNode(
+                StringUtils.difference(this.projectRoot.getRoot().toString(), sourceRoot.getRoot().toString()).replaceAll("^\\\\", ""),
+                types
+        );
     }
 
 }

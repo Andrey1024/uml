@@ -7,6 +7,7 @@ import { Element } from '../model/element.model';
 import { last } from 'lodash-es';
 import { Overlay } from '@angular/cdk/overlay';
 import { FontService } from './font.service';
+import { Hierarchy } from "../model/hierarchy.model";
 
 
 export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
@@ -54,12 +55,13 @@ export class CityService implements LayoutService {
         }
     }
 
-    place(struct: Element): THREE.Object3D[] {
-        const tree = d3.hierarchy(struct)
-            .sort(((a, b) => a.data.name.localeCompare(b.data.name)))
-            .sum(CityService.getElementWeight);
-        const city = this.createCityHierarchy(this.layout(tree));
-        return city.descendants().map(node => node.figure);
+    place(struct: Hierarchy): THREE.Object3D[] {
+        // const tree = d3.hierarchy(struct)
+        //     .sort(((a, b) => a.data.name.localeCompare(b.data.name)))
+        //     .sum(CityService.getElementWeight);
+        // const city = this.createCityHierarchy(this.layout(tree));
+        // return city.descendants().map(node => node.figure);
+        return [];
     }
 
     private createCityHierarchy(hierarchy: HierarchyRectangularNode<Element>): HierarchyCityNode {
@@ -77,9 +79,6 @@ export class CityService implements LayoutService {
         let height = 0;
 
         switch (node.data.type) {
-            case 'PACKAGE':
-                height = 15;
-                break;
             case 'CLASS':
             case 'INTERFACE':
                 // height = Math.max(node.data.methodsCount * 5, 15);
@@ -118,7 +117,7 @@ export class CityService implements LayoutService {
 
     private createTitleMesh(node: HierarchyCityNode): THREE.Mesh {
         if (!node.data.name
-            || node.data.type !== 'PACKAGE'
+            // || node.data.type !== 'PACKAGE'
             || (node.x1 - node.x0) < 5 * node.data.name.length) {
             return;
         }

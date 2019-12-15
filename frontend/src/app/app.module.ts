@@ -10,6 +10,8 @@ import { LayoutService } from './city/service/layout.service';
 import { CityService } from './city/service/city.service';
 import { StreetsService } from './city/service/streets.service';
 import { NgxsModule } from "@ngxs/store";
+import { NgxsReduxDevtoolsPluginModule } from "@ngxs/devtools-plugin";
+import { environment } from "../environments/environment";
 
 @NgModule({
     imports: [
@@ -17,7 +19,8 @@ import { NgxsModule } from "@ngxs/store";
         HttpClientModule,
         CityModule,
         BrowserAnimationsModule,
-        NgxsModule.forRoot()
+        NgxsModule.forRoot(),
+        NgxsReduxDevtoolsPluginModule.forRoot({ disabled: environment.production })
     ],
     declarations: [
         AppComponent

@@ -16,7 +16,7 @@ public class UmlController {
 
     @GetMapping("api/model")
     public Project getModel() throws IOException {
-        String repoUrl = "https://github.com/alibaba/Alink.git";
+        String repoUrl = "https://github.com/Andrey1024/uml.git";
 
         File p = File.createTempFile("remote", "");
         p.delete();

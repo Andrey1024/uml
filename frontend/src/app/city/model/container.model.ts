@@ -1,6 +1,6 @@
 import { Node } from './node.model';
 
-export interface Container extends Node {
-    type: 'PACKAGE';
-    children: Node[];
+export interface Container {
+    sourcePath: string;
+    classes: Node[];
 }
