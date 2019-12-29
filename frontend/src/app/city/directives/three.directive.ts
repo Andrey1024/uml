@@ -103,18 +103,9 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         });
 
         lights[0].position.set(-this.citySize - 200, 600, -this.citySize - 200);
-        // lights[1].position.set(200, 600, 200);
-        // lights[2].position.set(-(this.citySize / 2), 600, -(this.citySize / 2));
-        // lights[3].position.set(200, 600, -this.citySize - 200);
-        // lights[4].position.set(-this.citySize - 200, 600, 200);
-        // this.scene.add(...lights);
         this.scene.add(directionalLight);
         // this.scene.add(dirLight);
         this.scene.add(directionalLight.target);
-
-        this.scene.add(new THREE.AxesHelper( 100 ))
-        // this.scene.add(dirLight.target);
-        // this.scene.add(ambientLight);
     }
 
     @HostListener('window:resize', ['$event'])

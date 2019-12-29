@@ -3,45 +3,56 @@ package ru.avlasov.ast;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
 import com.github.javaparser.utils.ProjectRoot;
 import com.github.javaparser.utils.SourceRoot;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import ru.avlasov.ast.nodes.*;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import ru.avlasov.ast.nodes.AbstractNode;
+import ru.avlasov.ast.nodes.PackageNode;
+import ru.avlasov.ast.nodes.Project;
 import ru.avlasov.ast.visitors.ClassExtractor;
-import ru.avlasov.ast.visitors.PackageExtractor;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ProjectParser {
     private ProjectRoot projectRoot;
-    private Path projectPath;
+    private String repositoryUrl;
     private String projectName;
+    private Git git;
 
 
-    public ProjectParser(Path projectPath, String projectName) {
+    public ProjectParser(String repositoryUrl, String projectName) throws IOException, GitAPIException {
         ParserConfiguration configuration = new ParserConfiguration();
         configuration.setLanguageLevel(ParserConfiguration.LanguageLevel.CURRENT);
-        this.projectPath = projectPath;
+        this.repositoryUrl = repositoryUrl;
         this.projectName = projectName;
 
-        this.projectRoot = new SymbolSolverCollectionStrategy(configuration).collect(projectPath);
+        File repositoryDir = File.createTempFile("remote", "");
+        repositoryDir.delete();
+        git = Git.cloneRepository().setURI(repositoryUrl).setDirectory(repositoryDir).call();
+
+        this.projectRoot = new SymbolSolverCollectionStrategy(configuration)
+                .collect(git.getRepository().getWorkTree().toPath());
     }
 
-    public Project parse() {
-        return new Project(projectRoot.getSourceRoots().stream()
+    public Project parse() throws IOException {
+        Project result = new Project(projectRoot.getSourceRoots().stream()
                 .map(this::parseSourceRoot).collect(Collectors.toList()), this.projectName);
+        git.close();
+        FileUtils.deleteDirectory(git.getRepository().getWorkTree());
+        return result;
     }
 
     private PackageNode parseSourceRoot(SourceRoot sourceRoot) {
         List<AbstractNode> types = new ArrayList<>();
-//        Map<String, PackageTree> packageMap = new HashMap<>();
 
         List<ParseResult<CompilationUnit>> results = null;
         try {
@@ -50,16 +61,8 @@ public class ProjectParser {
             e.printStackTrace();
         }
 
-        results.stream().map(ParseResult::getResult).map(Optional::get)
+        results.stream().map(ParseResult::getResult).filter(Optional::isPresent).map(Optional::get)
                 .forEach(compilationUnit -> compilationUnit.accept(new ClassExtractor(), types));
-//        results.stream().map(ParseResult::getResult).map(Optional::get)
-//                .forEach(compilationUnit -> compilationUnit.accept(new PackageExtractor(), packageMap));
-//        PackageTree rootPack = new PackageTree(types.keySet().stream()
-//                .distinct().reduce((s1, s2) -> StringUtils.getCommonPrefix(s1, s2).replaceAll("\\.$", "")).orElse(""));
-//        PackageTree rootPack = new PackageTree(StringUtils.difference(this.projectRoot.getRoot().toString(), sourceRoot.getRoot().toString()));
-//        rootPack.getChildren().addAll(packageMap.values().stream().filter(packageTree -> packageTree.getParent() == null)
-//                .peek(child -> child.setParent(rootPack)).collect(Collectors.toList()));
-//        packageMap.put(rootPack.getName(), rootPack);
         return new PackageNode(
                 StringUtils.difference(this.projectRoot.getRoot().toString(), sourceRoot.getRoot().toString()).replaceAll("^\\\\", ""),
                 types
