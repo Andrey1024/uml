@@ -9,6 +9,7 @@
     "module": "esnext",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
+    "downlevelIteration": true,
     "experimentalDecorators": true,
     "target": "es2015",
     "typeRoots": [
