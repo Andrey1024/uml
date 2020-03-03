@@ -23,3 +23,7 @@ d/target/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+frontend/node
+src/main/resources/static
+target
