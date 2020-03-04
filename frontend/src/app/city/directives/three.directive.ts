@@ -219,9 +219,16 @@ export class ThreeDirective implements OnChanges, OnDestroy {
 
     }
 
-    private disposeObjects(...objects: THREE.Mesh[]) {
+    private disposeObjects(...objects: THREE.Object3D[]) {
         objects.forEach(obj => {
-            if (obj.isMesh) {
+            if (obj.parent) {
+                obj.parent.remove(obj);
+            }
+            if (obj.children) {
+                this.disposeObjects(...obj.children)
+            }
+            if (obj.type === 'Mesh') {
+                // @ts-ignore
                 obj.geometry.dispose();
                 // @ts-ignore
                 obj.material.dispose();

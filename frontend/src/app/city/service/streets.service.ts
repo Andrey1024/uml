@@ -34,8 +34,6 @@ interface UserData {
     data: { type: string, name: string };
 }
 
-type StreetElement = Street | Building;
-
 @Injectable()
 export class StreetsService implements LayoutService {
     readonly name = 'Evo Streets';
