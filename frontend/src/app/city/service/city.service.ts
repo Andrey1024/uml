@@ -3,14 +3,14 @@ import * as THREE from 'three';
 import { LayoutService } from './layout.service';
 import * as d3 from 'd3-hierarchy';
 import { HierarchyRectangularNode, TreemapLayout } from 'd3-hierarchy';
-import { Element } from '../model/element.model';
 import { last } from 'lodash-es';
 import { Overlay } from '@angular/cdk/overlay';
 import { FontService } from './font.service';
 import { Hierarchy } from "../model/hierarchy.model";
+import { ElementModel } from "../model/server-model/element.model";
 
 
-export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
+export interface HierarchyCityNode extends HierarchyRectangularNode<ElementModel> {
     z0: number;
     z1: number;
 
@@ -21,7 +21,7 @@ export interface HierarchyCityNode extends HierarchyRectangularNode<Element> {
 export class CityService implements LayoutService {
     readonly name = '3D City';
 
-    private readonly layout: TreemapLayout<Element>;
+    private readonly layout: TreemapLayout<ElementModel>;
 
     private citySize = 1500;
 
@@ -29,7 +29,7 @@ export class CityService implements LayoutService {
 
     constructor(private overlay: Overlay, private fontService: FontService) {
         // this.tooltip.style.position = 'absolute';
-        this.layout = d3.treemap<Element>().size([this.citySize, this.citySize])
+        this.layout = d3.treemap<ElementModel>().size([this.citySize, this.citySize])
             .round(false)
             .paddingOuter(30)
             .paddingInner(20)
@@ -45,7 +45,7 @@ export class CityService implements LayoutService {
         return steps[i];
     }
 
-    private static getElementWeight(element: Element): number {
+    private static getElementWeight(element: ElementModel): number {
         switch (element.type) {
             case 'CLASS':
             case 'INTERFACE':
@@ -64,7 +64,7 @@ export class CityService implements LayoutService {
         return [];
     }
 
-    private createCityHierarchy(hierarchy: HierarchyRectangularNode<Element>): HierarchyCityNode {
+    private createCityHierarchy(hierarchy: HierarchyRectangularNode<ElementModel>): HierarchyCityNode {
         (hierarchy as HierarchyCityNode).eachBefore(node => {
             const characteristics = this.getCharacteristics(node);
             node.z0 = node.parent === null ? 0 : node.parent.z1;

@@ -8,10 +8,10 @@ import java.util.stream.Collectors;
 
 public class ContainerNode extends Node {
 
-    public List<Node> children = new ArrayList<>();
+    public List<String> children = new ArrayList<>();
 
 
-    public void addChild(Node node) {
+    public void addChild(String  node) {
         this.children.add(node);
     }
 
@@ -20,18 +20,12 @@ public class ContainerNode extends Node {
         this.setType("CONTAINER");
     }
 
-    @Override
-    public List<String> collectPaths() {
-        List<String> result =  this.children.stream().map(Node::collectPaths).
-                flatMap(Collection::stream)
-                .collect(Collectors.toList());
-        result.add(this.getFullPath());
-        return result;
-    }
-
-    @Override
-    public void computeLifeSpan(List<Set<String>> versions) {
-        super.computeLifeSpan(versions);
-        children.stream().forEach(child -> child.computeLifeSpan(versions));
-    }
+//    @Override
+//    public List<String> collectPaths() {
+//        List<String> result =  this.children.stream().map(Node::collectPaths).
+//                flatMap(Collection::stream)
+//                .collect(Collectors.toList());
+//        result.add(this.getFullPath());
+//        return result;
+//    }
 }

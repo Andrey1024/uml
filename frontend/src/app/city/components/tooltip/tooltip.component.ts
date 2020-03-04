@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { Element } from '../../model/element.model';
 
 @Component({
     selector: 'uml-tooltip',
@@ -7,7 +6,7 @@ import { Element } from '../../model/element.model';
     styleUrls: ['./tooltip.component.scss']
 })
 export class TooltipComponent implements OnInit {
-    object: Element;
+    object: any;
 
     constructor() {
     }

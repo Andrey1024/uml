@@ -1,3 +1,3 @@
 export interface Hierarchy {
-    [packageOrTypeName: string]: Element | Hierarchy;
+    [packageOrTypeName: string]: Hierarchy;
 }

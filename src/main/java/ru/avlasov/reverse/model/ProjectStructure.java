@@ -1,9 +1,11 @@
 package ru.avlasov.reverse.model;
 
+import java.util.List;
+
 public class ProjectStructure {
     private String name;
     private String version;
-    private ContainerNode data;
+    private List<Node> data;
 
     public String getName() {
         return name;
@@ -21,15 +23,15 @@ public class ProjectStructure {
         this.version = version;
     }
 
-    public ContainerNode getData() {
+    public List<Node> getData() {
         return data;
     }
 
-    public void setData(ContainerNode data) {
+    public void setData(List<Node> data) {
         this.data = data;
     }
 
-    public ProjectStructure(String name, String version, ContainerNode data) {
+    public ProjectStructure(String name, String version, List<Node> data) {
         this.name = name;
         this.version = version;
         this.data = data;

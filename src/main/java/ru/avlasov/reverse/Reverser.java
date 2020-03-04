@@ -1,13 +1,18 @@
 package ru.avlasov.reverse;
 
 import org.eclipse.uml2.uml.*;
+import org.eclipse.uml2.uml.Class;
+import org.eclipse.uml2.uml.Package;
 import org.springframework.stereotype.Service;
 import ru.avlasov.reverse.model.*;
+import ru.avlasov.reverse.model.Node;
 import uml.java.reverser.asm.AsmBytecodeReverser;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Service
@@ -23,28 +28,32 @@ public class Reverser {
         trace = new LogProgressTracing(log);
     }
 
-    public ContainerNode reverse(String path) {
+    public List<Node> reverse(String path) {
+        List<Node> elements = new ArrayList<>();
         String rootPath = new File(".").getAbsolutePath().replace(".", "");
         Model model = UMLFactory.eINSTANCE.createModel();
         reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat(path)), model, trace);
         ContainerNode pack = new ContainerNode();
-        addNestedNodes(model, pack, null);
-        return pack;
+        elements.add(pack);
+        addNestedNodes(elements, model, pack, null);
+        return elements;
     }
 
-    private void addNestedNodes(Package ownerPackage, ContainerNode entity, String path) {
+    private void addNestedNodes(List<Node> elements, Package ownerPackage, ContainerNode entity, String path) {
         entity.setName(ownerPackage.getName());
         entity.setFullPath(path == null ? ownerPackage.getName() : path + "." + ownerPackage.getName());
-        addClassifiers(ownerPackage, entity, entity.getFullPath());
+        addClassifiers(elements, ownerPackage, entity);
         for (Package ownedPackage : ownerPackage.getNestedPackages()) {
             ContainerNode node = new ContainerNode();
+            node.setParentPackage(entity.getFullPath());
             node.setName(ownedPackage.getName());
-            addNestedNodes(ownedPackage, node, entity.getFullPath());
-            entity.addChild(node);
+            addNestedNodes(elements, ownedPackage, node, entity.getFullPath());
+            entity.addChild(node.getFullPath());
+            elements.add(node);
         }
     }
 
-    private void addClassifiers(Package ownerPackage, ContainerNode ownerNode, String path) {
+    private void addClassifiers(List<Node> elements, Package ownerPackage, ContainerNode ownerNode) {
         ownerPackage.getOwnedTypes().stream()
                 .filter(t -> t instanceof Classifier)
                 .forEach(t -> {
@@ -58,9 +67,10 @@ public class Reverser {
                     }
                     if (node != null) {
                         node.setName(t.getName());
-                        node.setFullPath(ownerNode.getFullPath());
-                        node.setFullPath(path + "." + t.getName());
-                        ownerNode.addChild(node);
+                        node.setFullPath(ownerNode.getFullPath() + "." + t.getName());
+                        node.setParentPackage(ownerNode.getFullPath());
+                        ownerNode.addChild(node.getFullPath());
+                        elements.add(node);
                     }
                 });
     }

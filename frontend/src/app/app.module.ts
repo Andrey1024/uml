@@ -19,8 +19,8 @@ import { environment } from "../environments/environment";
         HttpClientModule,
         CityModule,
         BrowserAnimationsModule,
-        NgxsModule.forRoot(),
-        NgxsReduxDevtoolsPluginModule.forRoot({ disabled: environment.production })
+        NgxsModule.forRoot([], {selectorOptions: {injectContainerState: false}}),
+        NgxsReduxDevtoolsPluginModule.forRoot({disabled: environment.production})
     ],
     declarations: [
         AppComponent
@@ -32,8 +32,8 @@ import { environment } from "../environments/environment";
             deps: [FontService],
             multi: true
         },
-        { provide: LayoutService, useClass: CityService, multi: true },
-        { provide: LayoutService, useClass: StreetsService, multi: true },
+        // { provide: LayoutService, useClass: CityService, multi: true },
+        {provide: LayoutService, useClass: StreetsService, multi: true},
     ],
     bootstrap: [AppComponent]
 })

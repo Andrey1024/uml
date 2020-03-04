@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
 import { LayoutService } from './layout.service';
-import { Element } from '../model/element.model';
 import * as THREE from 'three';
 import { Hierarchy } from "../model/hierarchy.model";
-import { first, last, map, mapValues } from "lodash-es";
-import { TemplateGuardMeta } from "@angular/compiler-cli/src/ngtsc/metadata";
+import { first, map } from "lodash-es";
+import { ElementModel } from "../model/server-model/element.model";
 
 interface Base {
     side?: 'left' | 'right';
@@ -15,7 +14,7 @@ interface Base {
 
 interface Building extends Base {
     height?: number;
-    data: Element;
+    data: ElementModel;
 }
 
 interface Street extends Base {
@@ -68,7 +67,7 @@ export class StreetsService implements LayoutService {
             : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k, depth + 1)), name, depth);
     }
 
-    private getElementProps(el: Element): { width: number, height: number } {
+    private getElementProps(el: ElementModel): { width: number, height: number } {
         switch (el.type) {
             case "CLASS":
             case "INTERFACE":
@@ -83,7 +82,7 @@ export class StreetsService implements LayoutService {
         }
     }
 
-    private createElementMesh(node: Element): THREE.Object3D {
+    private createElementMesh(node: ElementModel): THREE.Object3D {
         const props = this.getElementProps(node);
         const color = new THREE.Color('green');
         const material = new THREE.MeshPhongMaterial({
@@ -99,12 +98,14 @@ export class StreetsService implements LayoutService {
                 break;
             case 'INTERFACE':
                 const rad = props.width / 2;
-                geometry = new THREE.CylinderGeometry(rad, rad, props.height, 32, 32);
+                geometry = new THREE.CylinderGeometry(rad, rad, props.height, 32, 32)
+                    .translate(0, node.lifeSpan * 5, 0);
                 break;
         }
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.name = node.fullPath;
         mesh.matrixAutoUpdate = false;
-        mesh.userData = <UserData>{
+        mesh.userData = <UserData> {
             width: props.width,
             length: props.width,
             lifeSpan: node.lifeSpan,
@@ -196,20 +197,21 @@ export class StreetsService implements LayoutService {
             color, side: THREE.DoubleSide
         });
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.name = name;
         mesh.matrixAutoUpdate = false;
         mesh.matrixWorldNeedsUpdate = true;
-        mesh.userData = { data: { type: 'PACKAGE', name } };
+        mesh.userData = {data: {type: 'PACKAGE', name}};
         packageGroup.add(mesh, ...children);
         packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, -(lifeSpan - lastAge) * 2.5, (left - right) / 2));
 
 
-        packageGroup.userData = <UserData>{
+        packageGroup.userData = <UserData> {
             width: width + left + right,
             length,
             height: (lifeSpan - lastAge) * 5,
             lifeSpan,
             name,
-            data: { type: 'PACKAGE', name }
+            data: {type: 'PACKAGE', name}
         };
 
         return packageGroup;

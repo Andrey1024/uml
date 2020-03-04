@@ -9,14 +9,14 @@ public class Node {
     private String type;
     private String name;
     private String fullPath;
-    private Integer lifeSpan = 0;
+    private String parentPackage;
 
-    public Integer getLifeSpan() {
-        return lifeSpan;
+    public String getParentPackage() {
+        return parentPackage;
     }
 
-    public void setLifeSpan(Integer lifeSpan) {
-        this.lifeSpan = lifeSpan;
+    public void setParentPackage(String parentPackage) {
+        this.parentPackage = parentPackage;
     }
 
     public String getFullPath() {
@@ -45,18 +45,6 @@ public class Node {
 
     public List<String> collectPaths() {
         return Arrays.asList(this.fullPath);
-    }
-
-    public void computeLifeSpan(List<Set<String>> versions) {
-        Iterator<Set<String>> iterator = versions.iterator();
-        boolean stop = false;
-        while (iterator.hasNext() && !stop) {
-            if (iterator.next().contains(this.fullPath)) {
-                this.lifeSpan++;
-            } else {
-                stop = true;
-            }
-        }
     }
 
     public Node() {

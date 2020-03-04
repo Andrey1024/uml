@@ -21,6 +21,7 @@ import { ComponentPortal } from '@angular/cdk/portal';
 })
 export class ThreeDirective implements OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
+    @Input() visibleNodes: Set<string>;
     @Input() citySize = 1500;
     @Output() select = new EventEmitter();
 
@@ -189,6 +190,15 @@ export class ThreeDirective implements OnChanges, OnDestroy {
                 this.animate();
             }
         }
+        if (this.objects && changes.visibleNodes) {
+            this.objects.forEach(o => this.toggleVisibility(o))
+        }
+    }
+
+    toggleVisibility(obj: THREE.Object3D) {
+        if (obj.type === 'Group') {
+            obj.children.forEach(child => this.toggleVisibility(child));
+        } else obj.visible = !obj.name || this.visibleNodes.has(obj.name);
     }
 
     ngOnDestroy(): void {

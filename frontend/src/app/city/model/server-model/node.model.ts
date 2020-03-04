@@ -1,7 +1,7 @@
-export interface Node {
+export interface NodeModel {
     type: string;
     name: string;
+    fullPath: string;
     parentPackage: string;
-    fullPath: string
     lifeSpan: number;
 }

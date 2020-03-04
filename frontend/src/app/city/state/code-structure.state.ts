@@ -1,12 +1,14 @@
 import { Action, Selector, State, StateContext } from '@ngxs/store';
-import { Element } from "../model/element.model";
 import { HttpClient } from "@angular/common/http";
 import { tap } from "rxjs/operators";
-import { Project } from "../model/project.model";
 import { patch } from "@ngxs/store/operators";
 import { Hierarchy } from "../model/hierarchy.model";
-import { Node } from "../model/node.model";
+import { ProjectModel } from "../model/server-model/project.model";
+import { NodeVersioned } from "../model/node-versioned.model";
+import { Injectable } from "@angular/core";
+import { ItemNode } from "../model/tree-item.model";
 
+export const rootPath = 'Project Root';
 
 export class Load {
     static readonly type = '[Code Structure] load';
@@ -15,10 +17,14 @@ export class Load {
     }
 }
 
-export class SelectSource {
+export class LoadReverse {
+    static readonly type = '[Code Structure] load reversed';
+}
+
+export class SetVersion {
     static readonly type = '[Code Structure] select source';
 
-    constructor(public selectedRoot: string) {
+    constructor(public version: number) {
     }
 }
 
@@ -29,25 +35,21 @@ export class SelectNodes {
     }
 }
 
-export interface CodeStructureStateModel {
-    name: string;
-    data: {
-        [sourseRoot: string]: {
-            packages: string[];
-            elements: { [fullPath: string]: Element }
-        };
-    };
-    sourceRoots: string[];
-    selectedNodes: string[];
-    selectedRoot: string;
-    loaded: boolean;
+export class SetRoot {
+    static readonly type: '[Code Structure] set root';
+
+    constructor(public rootPath: string) {
+    }
 }
 
-function elementsSerializer(elements: Node[]) {
-    return {
-        packages: [...new Set(elements.map(el => el.parentPackage))],
-        elements: elements.reduce((acc, el) => ({ ...acc, [el.fullPath]: el }), {})
-    };
+export interface CodeStructureStateModel {
+    name: string;
+    data: { [fullPath: string]: NodeVersioned<any> };
+    versions: string[];
+    selectedNodes: string[];
+    version: number;
+    rootPath: string;
+    loaded: boolean;
 }
 
 function packageQualifier(packageName: string) {
@@ -55,79 +57,128 @@ function packageQualifier(packageName: string) {
 }
 
 
+function getHierarchy(data, path: string, version: string): Hierarchy {
+    const el = data[path][version];
+    return el.type === 'CONTAINER'
+        ? el.children.reduce((acc, cur) => ({ ...acc, [cur]: getHierarchy(data, cur, version) }), {})
+        : { ...el, lifeSpan: Object.keys(data[path]).filter(k => k <= version).length };
+}
+
+function buildItemTree(obj: { [key: string]: Hierarchy }, level: number = 0): ItemNode[] {
+    return Object.keys(obj).reduce<ItemNode[]>((accumulator, key) => {
+        const value = obj[key];
+        const node = new ItemNode(key);
+
+        if (!!value) {
+            if (!value.type) {
+                node.label = key;
+                node.children = buildItemTree(value, level + 1);
+            } else {
+                node.label = <any> value.name;
+            }
+        }
+
+        return accumulator.concat(node);
+    }, []);
+}
+
 @State<CodeStructureStateModel>({
     name: 'codeStructure',
     defaults: {
         name: null,
-        data: {},
-        sourceRoots: [],
+        data: null,
+        rootPath: rootPath,
+        versions: [],
+        version: 0,
         selectedNodes: [],
-        selectedRoot: null,
         loaded: false
     }
 })
+@Injectable()
 export class CodeStructureState {
-    @Selector()
+    @Selector([CodeStructureState])
     static isLoaded(state: CodeStructureStateModel): boolean {
-        return state.loaded && !!state.selectedRoot;
+        return state.loaded;
     }
 
-    @Selector()
-    static getStructure(state: CodeStructureStateModel): Hierarchy {
-        if (!state.selectedRoot) {
-            return {};
+    @Selector([CodeStructureState])
+    static getData(state: CodeStructureStateModel) {
+        return state.data;
+    }
+
+    @Selector([CodeStructureState])
+    static getVersion(state: CodeStructureStateModel) {
+        return state.version;
+    }
+
+    @Selector([CodeStructureState])
+    static getVersions(state: CodeStructureStateModel) {
+        return state.versions;
+    }
+
+    @Selector([CodeStructureState])
+    static getRootPath(state: CodeStructureStateModel) {
+        return state.rootPath;
+    }
+
+    @Selector([CodeStructureState])
+    static getSelectedNodes(state: CodeStructureStateModel) {
+        return new Set(state.selectedNodes);
+    }
+
+    @Selector([CodeStructureState.isLoaded, CodeStructureState.getRootPath, CodeStructureState.getVersion, CodeStructureState.getVersions, CodeStructureState.getData])
+    static getHierarchy(loaded, rootPath, version, versions, data) {
+        if (!loaded) {
+            return null;
         }
-        const { elements, packages } = state.data[state.selectedRoot];
-        return Object.keys(elements).reduce((h, className) => {
-            let iterator = h;
-            const packagePath = elements[className].parentPackage.split('.');
-            for (let i = 0; i < packagePath.length; i++) {
-                const curQualifier = packagePath.slice(0, i + 1).join('.');
-                const curIdentifier = packagePath.slice(0, i + 2).join('.');
-                if (packages.some(p => p == curQualifier || p.startsWith(curQualifier) && !(p.startsWith(curIdentifier)))) {
-                    iterator[curQualifier] = iterator[curQualifier] || {};
-                    iterator = iterator[curQualifier];
-                }
-            }
-            iterator[className] = elements[className];
-            return h;
-        }, {});
+        return getHierarchy(data, rootPath, versions[version]);
     }
 
-    @Selector()
-    static getSourceRoots(state: CodeStructureStateModel): string[] {
-        return state.sourceRoots;
-    }
-
-    @Selector()
-    static getSelectedSourceRoot(state: CodeStructureStateModel): string {
-        return state.selectedRoot
+    @Selector([CodeStructureState.getHierarchy])
+    static getTreeItems(hierarchy) {
+        if (hierarchy === null) {
+            return [];
+        }
+        return buildItemTree(hierarchy);
     }
 
     constructor(private http: HttpClient) {
     }
 
-    @Action(Load)
-    load(ctx: StateContext<CodeStructureStateModel>, { rep }: Load) {
+    @Action(LoadReverse)
+    loadReverse(ctx: StateContext<CodeStructureStateModel>) {
         ctx.patchState({ loaded: false });
-        return this.http.get<Project>('api/model').pipe(
-            tap(project => ctx.setState(patch<CodeStructureStateModel>({
-                name: project.name,
-                sourceRoots: project.data.map(c => c.sourcePath),
-                data: project.data.reduce((res, d) => ({ ...res, [d.sourcePath]: elementsSerializer(d.classes) }), {}),
-                loaded: true
-            })))
-        )
+        return this.http.get<ProjectModel[]>('/api/reverse').pipe(
+            tap(results => {
+                const versions = results.map(v => v.version);
+                const data = {};
+                results.forEach(project => {
+                    project.data.forEach(el => {
+                        const fullPath = el.fullPath === null ? rootPath : el.fullPath;
+                        data[fullPath] = data[fullPath] ? data[fullPath] : {};
+                        data[fullPath][project.version] = el;
+                    });
+                });
+                ctx.setState(patch<CodeStructureStateModel>({
+                    loaded: true, versions, version: 0, data, selectedNodes: Object.keys(data)
+                }));
+            })
+        );
     }
+
 
     @Action(SelectNodes)
     selectNodes(ctx: StateContext<CodeStructureStateModel>, { selectedNodes }: SelectNodes) {
         ctx.patchState({ selectedNodes });
     }
 
-    @Action(SelectSource)
-    selectSource(ctx: StateContext<CodeStructureStateModel>, { selectedRoot }: SelectSource) {
-        ctx.patchState({ selectedRoot });
+    @Action(SetVersion)
+    selectSource(ctx: StateContext<CodeStructureStateModel>, { version }: SetVersion) {
+        ctx.patchState({ version });
     }
 
+    @Action(SetRoot)
+    setRoot(ctx: StateContext<CodeStructureStateModel>, { rootPath }: SetRoot) {
+        ctx.patchState({ rootPath });
+    }
 }

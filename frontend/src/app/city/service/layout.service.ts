@@ -1,4 +1,3 @@
-import { Element } from '../model/element.model';
 import * as THREE from 'three';
 import { Hierarchy } from "../model/hierarchy.model";
 
