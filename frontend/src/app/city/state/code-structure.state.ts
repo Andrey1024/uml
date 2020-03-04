@@ -52,16 +52,14 @@ export interface CodeStructureStateModel {
     loaded: boolean;
 }
 
-function packageQualifier(packageName: string) {
-    return packageName.split('.').slice(0, -1).join('.');
-}
-
-
 function getHierarchy(data, path: string, version: string): Hierarchy {
     const el = data[path][version];
+    if (el === undefined) {
+        return null;
+    }
     return el.type === 'CONTAINER'
         ? el.children.reduce((acc, cur) => ({ ...acc, [cur]: getHierarchy(data, cur, version) }), {})
-        : { ...el, lifeSpan: Object.keys(data[path]).filter(k => k <= version).length };
+        : el;
 }
 
 function buildItemTree(obj: { [key: string]: Hierarchy }, level: number = 0): ItemNode[] {
@@ -104,6 +102,12 @@ export class CodeStructureState {
     @Selector([CodeStructureState])
     static getData(state: CodeStructureStateModel) {
         return state.data;
+    }
+
+
+    @Selector([CodeStructureState])
+    static getName(state: CodeStructureStateModel) {
+        return state.name;
     }
 
     @Selector([CodeStructureState])
@@ -151,16 +155,17 @@ export class CodeStructureState {
         return this.http.get<ProjectModel[]>('/api/reverse').pipe(
             tap(results => {
                 const versions = results.map(v => v.version);
+                const name = results[0].name;
                 const data = {};
                 results.forEach(project => {
                     project.data.forEach(el => {
                         const fullPath = el.fullPath === null ? rootPath : el.fullPath;
                         data[fullPath] = data[fullPath] ? data[fullPath] : {};
-                        data[fullPath][project.version] = el;
+                        data[fullPath][project.version] = { ...el, lifeSpan: Object.keys(data[fullPath]).length };
                     });
                 });
                 ctx.setState(patch<CodeStructureStateModel>({
-                    loaded: true, versions, version: 0, data, selectedNodes: Object.keys(data)
+                    loaded: true, versions, version: 0, data, selectedNodes: Object.keys(data), name
                 }));
             })
         );

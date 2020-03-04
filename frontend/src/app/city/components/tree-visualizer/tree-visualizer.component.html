@@ -1,11 +1,4 @@
 <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-    <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding [matTreeNodePaddingIndent]="10">
-        <button class="toggle-button" mat-icon-button disabled></button>
-        <mat-checkbox class="checklist-leaf-node"
-                      [checked]="selected.has(node.item)"
-                      (change)="todoLeafItemSelectionToggle(node)">{{node.label}}</mat-checkbox>
-    </mat-tree-node>
-
     <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding [matTreeNodePaddingIndent]="10">
         <button class="toggle-button" mat-icon-button matTreeNodeToggle>
             <mat-icon class="mat-icon-rtl-mirror">
@@ -19,4 +12,12 @@
             <mat-icon [inline]="true">crop</mat-icon>
         </button>
     </mat-tree-node>
+
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding [matTreeNodePaddingIndent]="10">
+        <button class="toggle-button" mat-icon-button disabled></button>
+        <mat-checkbox class="checklist-leaf-node"
+                      [checked]="selected.has(node.item)"
+                      (change)="todoLeafItemSelectionToggle(node)">{{node.label}}</mat-checkbox>
+    </mat-tree-node>
+
 </mat-tree>

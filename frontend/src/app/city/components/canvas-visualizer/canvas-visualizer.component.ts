@@ -24,6 +24,9 @@ import { ItemNode } from "../../model/tree-item.model";
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CanvasVisualizerComponent implements OnInit {
+    @Select(CodeStructureState.getName)
+    name$: Observable<string>;
+
     @Select(CodeStructureState.getHierarchy)
     selectedData$: Observable<Hierarchy>;
 

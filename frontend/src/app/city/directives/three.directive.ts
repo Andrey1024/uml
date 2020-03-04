@@ -184,6 +184,7 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         if (changes.objects) {
             if (!changes.objects.isFirstChange() && changes.objects.previousValue && changes.objects.previousValue.length) {
                 this.scene.remove(...changes.objects.previousValue);
+                this.disposeObjects(...changes.objects.previousValue);
             }
             if (this.objects && this.objects.length) {
                 this.scene.add(...this.objects);
@@ -218,10 +219,15 @@ export class ThreeDirective implements OnChanges, OnDestroy {
 
     }
 
-    // getIntersected(rayCaster: THREE.Raycaster, objects = this.objects): THREE.Object3D {
-    //     const intersected = [];
-    //
-    // }
+    private disposeObjects(...objects: THREE.Mesh[]) {
+        objects.forEach(obj => {
+            if (obj.isMesh) {
+                obj.geometry.dispose();
+                // @ts-ignore
+                obj.material.dispose();
+            }
+        })
+    }
 
     private animate() {
         this.animationFrame = requestAnimationFrame(() => this.animate());

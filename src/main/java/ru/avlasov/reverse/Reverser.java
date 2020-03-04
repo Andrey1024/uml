@@ -42,7 +42,6 @@ public class Reverser {
     private void addNestedNodes(List<Node> elements, Package ownerPackage, ContainerNode entity, String path) {
         entity.setName(ownerPackage.getName());
         entity.setFullPath(path == null ? ownerPackage.getName() : path + "." + ownerPackage.getName());
-        addClassifiers(elements, ownerPackage, entity);
         for (Package ownedPackage : ownerPackage.getNestedPackages()) {
             ContainerNode node = new ContainerNode();
             node.setParentPackage(entity.getFullPath());
@@ -51,6 +50,7 @@ public class Reverser {
             entity.addChild(node.getFullPath());
             elements.add(node);
         }
+        addClassifiers(elements, ownerPackage, entity);
     }
 
     private void addClassifiers(List<Node> elements, Package ownerPackage, ContainerNode ownerNode) {

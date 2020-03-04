@@ -1,11 +1,14 @@
 <div class="main-container">
-    <mat-slider *ngIf="versions$ | async as versions"
-                [value]="selectedVersion$ | async"
-                (valueChange)="selectVersion($event)"
-                [thumbLabel]="true"
-                [displayWith]="versionThumb(versions)"
-                [min]="0"
-                [max]="versions.length - 1"></mat-slider>
+    <div *ngIf="versions$ | async as versions" class="version-container">
+        <div class="version-header">{{ name$ | async }} : {{ versions[selectedVersion$ | async] }}</div>
+        <mat-slider [value]="selectedVersion$ | async"
+                    (valueChange)="selectVersion($event)"
+                    [thumbLabel]="true"
+                    [tickInterval]="1"
+                    [displayWith]="versionThumb(versions)"
+                    [min]="0"
+                    [max]="versions.length - 1"></mat-slider>
+    </div>
     <mat-button-toggle-group [formControl]="selectedLayout" aria-label="Font Style">
         <mat-button-toggle *ngFor="let layout of layoutTypes" [value]="layout">{{ layout }}</mat-button-toggle>
     </mat-button-toggle-group>
@@ -13,8 +16,10 @@
 </div>
 <div class="tree-container">
     <div>
-        <span>{{ rootPath$ | async }}</span>
-        <button mat-icon-button (click)="setRoot()"><mat-icon>redo</mat-icon></button>
+        <span class="root-path">{{ rootPath$ | async }}</span>
+        <button mat-icon-button (click)="setRoot()">
+            <mat-icon>redo</mat-icon>
+        </button>
     </div>
     <uml-tree-visualizer [data]="treeItems$ | async"
                          [selected]="selectedNodes$ | async"
