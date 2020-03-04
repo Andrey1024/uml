@@ -9,7 +9,7 @@
                       (change)="todoItemSelectionToggle(node)"
                       [indeterminate]="descendantsPartiallySelected(node)">{{node.label}}</mat-checkbox>
         <button mat-icon-button class="crop-button" (click)="setRoot.emit(node.item)">
-            <mat-icon [inline]="true">crop</mat-icon>
+            <mat-icon [inline]="true">details</mat-icon>
         </button>
     </mat-tree-node>
 
