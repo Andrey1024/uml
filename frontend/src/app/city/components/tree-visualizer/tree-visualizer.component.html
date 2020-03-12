@@ -5,9 +5,9 @@
                 {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
             </mat-icon>
         </button>
-        <mat-checkbox [checked]="descendantsAllSelected(node)"
-                      (change)="todoItemSelectionToggle(node)"
-                      [indeterminate]="descendantsPartiallySelected(node)">{{node.label}}</mat-checkbox>
+        <mat-checkbox [checked]="descendantsAllSelected(node)" (change)="todoItemSelectionToggle(node)"
+            (mouseenter)="focus.emit(node.item)" [indeterminate]="descendantsPartiallySelected(node)">{{node.label}}
+        </mat-checkbox>
         <button mat-icon-button class="crop-button" (click)="setRoot.emit(node.item)">
             <mat-icon [inline]="true">crop</mat-icon>
         </button>
@@ -15,9 +15,9 @@
 
     <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding [matTreeNodePaddingIndent]="10">
         <button class="toggle-button" mat-icon-button disabled></button>
-        <mat-checkbox class="checklist-leaf-node"
-                      [checked]="selected.has(node.item)"
-                      (change)="todoLeafItemSelectionToggle(node)">{{node.label}}</mat-checkbox>
+        <mat-checkbox class="checklist-leaf-node" (mouseenter)="focus.emit(node.item)"
+            [checked]="selected.has(node.item)" (change)="todoLeafItemSelectionToggle(node)">{{node.label}}
+        </mat-checkbox>
     </mat-tree-node>
 
 </mat-tree>
