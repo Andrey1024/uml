@@ -81,7 +81,7 @@ export class CanvasVisualizerComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
-        this.highLight$.subscribe(name => this.three.focus(name));
+        // this.highLight$.subscribe(name => this.three.focus(name));
     }
 
     selectVersion(version: number) {

@@ -1,4 +1,27 @@
-<div class="main-container">
+<mat-toolbar color="primary">
+    <mat-toolbar-row>
+        <div *ngIf="versions$ | async as versions" class="version-container">
+            <div class="version-header">{{ name$ | async }} : {{ versions[selectedVersion$ | async] }}</div>
+            <mat-slider [value]="selectedVersion$ | async" (valueChange)="selectVersion($event)" [thumbLabel]="true"
+                [tickInterval]="1" [displayWith]="versionThumb(versions)" [min]="0" [max]="versions.length - 1">
+            </mat-slider>
+        </div>
+    </mat-toolbar-row>
+    <mat-toolbar-row></mat-toolbar-row>
+    <!-- <mat-button-toggle-group [formControl]="selectedLayout" aria-label="Font Style">
+        <mat-button-toggle *ngFor="let layout of layoutTypes" [value]="layout">{{ layout }}</mat-button-toggle>
+    </mat-button-toggle-group> -->
+</mat-toolbar>
+<mat-sidenav-container class="fullscreen-container">
+    <mat-sidenav mode="side" position="end" opened>
+        <uml-tree-visualizer [data]="treeItems$ | async" [selected]="selectedNodes$ | async" (setRoot)="setRoot($event)"
+            (focus)="focusObject($event)" (select)="selectNodes($event)"></uml-tree-visualizer>
+    </mat-sidenav>
+    <mat-sidenav-content>
+    </mat-sidenav-content>
+</mat-sidenav-container>
+
+<!-- <div class="main-container">
     <div *ngIf="versions$ | async as versions" class="version-container">
         <div class="version-header">{{ name$ | async }} : {{ versions[selectedVersion$ | async] }}</div>
         <mat-slider [value]="selectedVersion$ | async"
@@ -21,9 +44,4 @@
             <mat-icon>redo</mat-icon>
         </button>
     </div>
-    <uml-tree-visualizer [data]="treeItems$ | async"
-                         [selected]="selectedNodes$ | async"
-                         (setRoot)="setRoot($event)"
-                         (focus)="focusObject($event)"
-                         (select)="selectNodes($event)"></uml-tree-visualizer>
-</div>
+</div> -->
