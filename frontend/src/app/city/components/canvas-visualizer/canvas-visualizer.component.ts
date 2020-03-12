@@ -1,21 +1,23 @@
-import { ChangeDetectionStrategy, Component, Inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { LayoutService } from '../../service/layout.service';
 import { Observable } from 'rxjs/internal/Observable';
 import { filter, map, skipUntil, startWith } from 'rxjs/operators';
 import { FormControl } from '@angular/forms';
 import { combineLatest } from 'rxjs';
 import * as THREE from 'three';
-import { Select, Store } from "@ngxs/store";
+import { Select, Store, Actions } from "@ngxs/store";
 import {
     CodeStructureState,
     LoadReverse,
     rootPath,
     SelectNodes,
     SetRoot,
-    SetVersion
+    SetVersion,
+    Focus
 } from "../../state/code-structure.state";
 import { Hierarchy } from "../../model/hierarchy.model";
 import { ItemNode } from "../../model/tree-item.model";
+import { ThreeDirective } from '../../directives/three.directive';
 
 @Component({
     selector: 'uml-canvas-visualizer',
@@ -23,7 +25,9 @@ import { ItemNode } from "../../model/tree-item.model";
     styleUrls: ['./canvas-visualizer.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CanvasVisualizerComponent implements OnInit {
+export class CanvasVisualizerComponent implements OnInit, AfterViewInit {
+    @ViewChild(ThreeDirective, { static: false }) three: ThreeDirective;
+
     @Select(CodeStructureState.getName)
     name$: Observable<string>;
 
@@ -48,12 +52,15 @@ export class CanvasVisualizerComponent implements OnInit {
     @Select(CodeStructureState.getRootPath)
     rootPath$: Observable<string>;
 
+    @Select(CodeStructureState.getHighLight)
+    highLight$: Observable<string>;
+
     selectedLayout = new FormControl();
 
     objects: Observable<THREE.Object3D[]>;
 
 
-    constructor(private store: Store, @Inject(LayoutService) private layouts: LayoutService[]) {
+    constructor(private store: Store, private actions$: Actions, @Inject(LayoutService) private layouts: LayoutService[]) {
         this.selectedLayout.setValue(layouts[0].name);
         this.objects = combineLatest([
             this.selectedLayout.valueChanges.pipe(startWith(this.selectedLayout.value)),
@@ -73,6 +80,10 @@ export class CanvasVisualizerComponent implements OnInit {
         this.store.dispatch(new LoadReverse());
     }
 
+    ngAfterViewInit() {
+        this.highLight$.subscribe(name => this.three.focus(name));
+    }
+
     selectVersion(version: number) {
         this.store.dispatch(new SetVersion(version));
     }
@@ -87,5 +98,9 @@ export class CanvasVisualizerComponent implements OnInit {
 
     setRoot(path: string = rootPath) {
         this.store.dispatch(new SetRoot(path));
+    }
+
+    focusObject(name: string) {
+        this.store.dispatch(new Focus(name));
     }
 }

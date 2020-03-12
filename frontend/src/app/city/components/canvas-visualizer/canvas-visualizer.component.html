@@ -24,5 +24,6 @@
     <uml-tree-visualizer [data]="treeItems$ | async"
                          [selected]="selectedNodes$ | async"
                          (setRoot)="setRoot($event)"
+                         (focus)="focusObject($event)"
                          (select)="selectNodes($event)"></uml-tree-visualizer>
 </div>

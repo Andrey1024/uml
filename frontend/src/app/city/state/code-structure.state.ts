@@ -36,10 +36,17 @@ export class SelectNodes {
 }
 
 export class SetRoot {
-    static readonly type: '[Code Structure] set root';
+    static readonly type = '[Code Structure] set root';
 
     constructor(public rootPath: string) {
     }
+}
+
+export class Focus {
+    static readonly type = '[Code Structure] focus';
+
+    constructor(public name: string) { }
+    
 }
 
 export interface CodeStructureStateModel {
@@ -50,6 +57,7 @@ export interface CodeStructureStateModel {
     version: number;
     rootPath: string;
     loaded: boolean;
+    highLight: string;
 }
 
 function getHierarchy(data, path: string, version: string): Hierarchy {
@@ -72,7 +80,7 @@ function buildItemTree(obj: { [key: string]: Hierarchy }, level: number = 0): It
                 node.label = key;
                 node.children = buildItemTree(value, level + 1);
             } else {
-                node.label = <any> value.name;
+                node.label = <any>value.name;
             }
         }
 
@@ -89,7 +97,8 @@ function buildItemTree(obj: { [key: string]: Hierarchy }, level: number = 0): It
         versions: [],
         version: 0,
         selectedNodes: [],
-        loaded: false
+        loaded: false,
+        highLight: null
     }
 })
 @Injectable()
@@ -146,6 +155,11 @@ export class CodeStructureState {
         return buildItemTree(hierarchy);
     }
 
+    @Selector([CodeStructureState])
+    static getHighLight(state: CodeStructureStateModel) {
+        return state.highLight;
+    }
+
     constructor(private http: HttpClient) {
     }
 
@@ -185,5 +199,12 @@ export class CodeStructureState {
     @Action(SetRoot)
     setRoot(ctx: StateContext<CodeStructureStateModel>, { rootPath }: SetRoot) {
         ctx.patchState({ rootPath });
+    }
+
+    @Action(Focus)
+    focusObject(ctx: StateContext<CodeStructureStateModel>, { name }: Focus) {
+        if (ctx.getState().highLight !== name) {
+            ctx.patchState({highLight: name});
+        }
     }
 }

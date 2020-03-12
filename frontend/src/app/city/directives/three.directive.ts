@@ -17,7 +17,8 @@ import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 
 @Directive({
-    selector: '[umlThree]'
+    selector: '[umlThree]',
+    exportAs: 'three'
 })
 export class ThreeDirective implements OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
@@ -213,6 +214,17 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         this.renderer.setSize(width, height);
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
+    }
+
+    focus(name: string) {
+        const object = this.scene.getObjectByName(name);
+        if (!object) {
+            return;
+        }
+
+        const target = new THREE.Vector3();
+        object.getWorldPosition(target);
+        this.camera.lookAt(target);
     }
 
     private addLight() {
