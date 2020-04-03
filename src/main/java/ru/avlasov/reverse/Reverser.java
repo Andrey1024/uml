@@ -29,13 +29,15 @@ public class Reverser {
     }
 
     public List<Node> reverse(String path) {
-        List<Node> elements = new ArrayList<>();
         String rootPath = new File(".").getAbsolutePath().replace(".", "");
         Model model = UMLFactory.eINSTANCE.createModel();
         reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat(path)), model, trace);
+
+        List<Node> elements = new ArrayList<>();
         ContainerNode pack = new ContainerNode();
         elements.add(pack);
         addNestedNodes(elements, model, pack, null);
+
         return elements;
     }
 
