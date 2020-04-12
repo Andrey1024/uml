@@ -30,6 +30,8 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
 
     @Output() setRoot = new EventEmitter<string>();
 
+    @Output() focus = new EventEmitter<string>();
+
     flatNodeMap = new Map<ItemFlatNode, ItemNode>();
 
     /** Map from nested node to flattened node. This helps us to keep the same object for selection */

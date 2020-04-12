@@ -17,7 +17,8 @@ import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 
 @Directive({
-    selector: '[umlThree]'
+    selector: '[umlThree]',
+    exportAs: 'three'
 })
 export class ThreeDirective implements OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
@@ -74,6 +75,8 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         // this.renderer.shadowMapDarkness = 0.5;
         // this.renderer.shadowMapWidth = 1024;
         // this.renderer.shadowMapHeight = 1024;
+        const axesHelper = new THREE.AxesHelper( 50 );
+        this.scene.add(axesHelper);
         this.camera.lookAt(0, 0, 0);
         this.controls.getObject().position.set(0, 300, 300);
         this.scene.add(this.controls.getObject());
@@ -215,13 +218,31 @@ export class ThreeDirective implements OnChanges, OnDestroy {
         this.camera.updateProjectionMatrix();
     }
 
+    focus(name: string) {
+        const object = this.scene.getObjectByName(name);
+        if (!object) {
+            return;
+        }
+
+        const target = new THREE.Vector3();
+        object.getWorldPosition(target);
+        this.camera.lookAt(target);
+    }
+
     private addLight() {
 
     }
 
-    private disposeObjects(...objects: THREE.Mesh[]) {
+    private disposeObjects(...objects: THREE.Object3D[]) {
         objects.forEach(obj => {
-            if (obj.isMesh) {
+            if (obj.parent) {
+                obj.parent.remove(obj);
+            }
+            if (obj.children) {
+                this.disposeObjects(...obj.children)
+            }
+            if (obj.type === 'Mesh') {
+                // @ts-ignore
                 obj.geometry.dispose();
                 // @ts-ignore
                 obj.material.dispose();

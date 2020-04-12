@@ -19,6 +19,8 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
+import { MatSidenavModule } from "@angular/material/sidenav";
+import { MatToolbarModule } from "@angular/material/toolbar";
 
 @NgModule({
     imports: [
@@ -31,12 +33,14 @@ import { MatIconModule } from "@angular/material/icon";
         MatTabsModule,
         MatButtonToggleModule,
         MatTreeModule,
+        MatToolbarModule,
         MatSliderModule,
         NgxsModule.forFeature([CodeStructureState]),
         MatCheckboxModule,
         MatButtonModule,
         MatInputModule,
-        MatIconModule
+        MatIconModule,
+        MatSidenavModule
     ],
     declarations: [
         CanvasVisualizerComponent,

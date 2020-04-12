@@ -5,26 +5,6 @@ import { Hierarchy } from "../model/hierarchy.model";
 import { first, map } from "lodash-es";
 import { ElementModel } from "../model/server-model/element.model";
 
-interface Base {
-    side?: 'left' | 'right';
-    offset?: number;
-    width: number;
-    length: number;
-}
-
-interface Building extends Base {
-    height?: number;
-    data: ElementModel;
-}
-
-interface Street extends Base {
-    children: Array<Street | Building>;
-    data: string;
-    left: number;
-    right: number;
-    segments: { length: number; age: number; }[];
-}
-
 interface UserData {
     width: number;
     height: number;
@@ -33,8 +13,6 @@ interface UserData {
     name: string;
     data: { type: string, name: string };
 }
-
-type StreetElement = Street | Building;
 
 @Injectable()
 export class StreetsService implements LayoutService {
@@ -72,8 +50,8 @@ export class StreetsService implements LayoutService {
             case "CLASS":
             case "INTERFACE":
                 return {
-                    width: StreetsService.closeValue(el.methodsCount, 10, 20, 30, 40, 50) * 2,
-                    height: 10
+                    width: StreetsService.closeValue(el.attributesCount, 10, 20, 30, 40, 50) * 2,
+                    height: StreetsService.closeValue(el.methodsCount, 10, 20, 30, 40, 50) * 3
                 };
             default:
                 return {
