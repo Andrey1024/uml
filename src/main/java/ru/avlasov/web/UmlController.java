@@ -32,8 +32,9 @@ public class UmlController {
     }
 
     @GetMapping("api/model")
-    public Project getModel() throws IOException, GitAPIException {
-        return new ProjectParser("https://github.com/alibaba/Alink.git", "UML").parse();
+    public List<ProjectStructure> getModel() throws IOException, GitAPIException {
+        return Arrays.asList(new ProjectStructure("Alink", "0",
+                this.reverser.reverse(new ProjectParser("https://github.com/alibaba/Alink.git", "UML").parse())));
     }
 
 }

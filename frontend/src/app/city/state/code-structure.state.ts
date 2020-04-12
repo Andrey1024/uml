@@ -152,7 +152,7 @@ export class CodeStructureState {
     @Action(LoadReverse)
     loadReverse(ctx: StateContext<CodeStructureStateModel>) {
         ctx.patchState({ loaded: false });
-        return this.http.get<ProjectModel[]>('/api/reverse').pipe(
+        return this.http.get<ProjectModel[]>('/api/model').pipe(
             tap(results => {
                 const versions = results.map(v => v.version);
                 const name = results[0].name;

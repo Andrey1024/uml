@@ -33,11 +33,14 @@ public class Reverser {
         Model model = UMLFactory.eINSTANCE.createModel();
         reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat(path)), model, trace);
 
+        return reverse(model);
+    }
+
+    public List<Node> reverse(Model model) {
         List<Node> elements = new ArrayList<>();
         ContainerNode pack = new ContainerNode();
         elements.add(pack);
         addNestedNodes(elements, model, pack, null);
-
         return elements;
     }
 

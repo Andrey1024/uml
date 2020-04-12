@@ -7,17 +7,14 @@ import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
 import com.github.javaparser.utils.ProjectRoot;
 import com.github.javaparser.utils.SourceRoot;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import ru.avlasov.ast.nodes.AbstractNode;
-import ru.avlasov.ast.nodes.PackageNode;
-import ru.avlasov.ast.nodes.Project;
-import ru.avlasov.ast.visitors.ClassExtractor;
+import org.eclipse.uml2.uml.Model;
+import org.eclipse.uml2.uml.UMLFactory;
+import ru.avlasov.ast.visitors.UmlGenerator;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,30 +40,26 @@ public class ProjectParser {
                 .collect(git.getRepository().getWorkTree().toPath());
     }
 
-    public Project parse() throws IOException {
-        Project result = new Project(projectRoot.getSourceRoots().stream()
-                .map(this::parseSourceRoot).collect(Collectors.toList()), this.projectName);
+    public Model parse() throws IOException {
+        Model result = UMLFactory.eINSTANCE.createModel();
+        projectRoot.getSourceRoots()
+                .forEach(sourceRoot -> parseSourceRoot(sourceRoot, result));
         git.close();
         FileUtils.deleteDirectory(git.getRepository().getWorkTree());
         return result;
     }
 
-    private PackageNode parseSourceRoot(SourceRoot sourceRoot) {
-        List<AbstractNode> types = new ArrayList<>();
-
-        List<ParseResult<CompilationUnit>> results = null;
+    private void parseSourceRoot(SourceRoot sourceRoot, Model model) {
+        List<CompilationUnit> results = null;
         try {
-            results = sourceRoot.tryToParse();
+            results = sourceRoot.tryToParse().stream().map(ParseResult::getResult)
+                    .filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        results.stream().map(ParseResult::getResult).filter(Optional::isPresent).map(Optional::get)
-                .forEach(compilationUnit -> compilationUnit.accept(new ClassExtractor(), types));
-        return new PackageNode(
-                StringUtils.difference(this.projectRoot.getRoot().toString(), sourceRoot.getRoot().toString()).replaceAll("^\\\\", ""),
-                types
-        );
+        UmlGenerator uml = new UmlGenerator(results, model);
+
     }
 
 }

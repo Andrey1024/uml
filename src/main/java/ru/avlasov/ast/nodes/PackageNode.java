@@ -6,10 +6,10 @@ import java.util.List;
 public class PackageNode {
     private String sourcePath;
 
-    private List<AbstractNode> classes = new ArrayList<>();
+    private List<AbstractNode> children;
 
-    public List<AbstractNode> getClasses() {
-        return classes;
+    public List<AbstractNode> getChildren() {
+        return children;
     }
 
     public String getSourcePath() {
@@ -22,7 +22,7 @@ public class PackageNode {
 
     public PackageNode(String sourcePath, List<AbstractNode> children) {
         this.sourcePath = sourcePath;
-        this.classes = children;
+        this.children = children;
     }
 
 //    public static PackageNode createPackage(PackageTree packageTree, Map<String, List<ResolvedReferenceTypeDeclaration>> nodes) {
