@@ -7,6 +7,7 @@ import {
     Input,
     OnChanges,
     OnDestroy,
+    OnInit,
     Output,
     SimpleChanges
 } from '@angular/core';
@@ -20,7 +21,7 @@ import { ComponentPortal } from '@angular/cdk/portal';
     selector: '[umlThree]',
     exportAs: 'three'
 })
-export class ThreeDirective implements OnChanges, OnDestroy {
+export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
     @Input() visibleNodes: Set<string>;
     @Input() citySize = 1500;
@@ -53,9 +54,6 @@ export class ThreeDirective implements OnChanges, OnDestroy {
     constructor(private element: ElementRef<HTMLDivElement>, private overlay: Overlay) {
         this.tooltipEl = document.createElement('div');
         this.tooltipEl.style.position = 'absolute';
-        element.nativeElement.appendChild(this.renderer.domElement);
-        element.nativeElement.appendChild(this.tooltipEl);
-        this.resize(element.nativeElement.clientWidth, element.nativeElement.clientHeight);
 
         this.tooltipOverlay = this.overlay.create({
             positionStrategy: this.overlay.position().flexibleConnectedTo(this.tooltipEl)
@@ -181,6 +179,12 @@ export class ThreeDirective implements OnChanges, OnDestroy {
                 this.moveRight = false;
                 break;
         }
+    }
+
+    ngOnInit() {
+        this.element.nativeElement.appendChild(this.renderer.domElement);
+        this.element.nativeElement.appendChild(this.tooltipEl);
+        this.resize(this.element.nativeElement.clientWidth, this.element.nativeElement.clientHeight);
     }
 
     ngOnChanges(changes: SimpleChanges): void {

@@ -12,12 +12,14 @@
         <mat-button-toggle *ngFor="let layout of layoutTypes" [value]="layout">{{ layout }}</mat-button-toggle>
     </mat-button-toggle-group> -->
 </mat-toolbar>
-<mat-sidenav-container class="fullscreen-container">
+<mat-sidenav-container class="fullscreen">
     <mat-sidenav mode="side" position="end" opened>
         <uml-tree-visualizer [data]="treeItems$ | async" [selected]="selectedNodes$ | async" (setRoot)="setRoot($event)"
             (focus)="focusObject($event)" (select)="selectNodes($event)"></uml-tree-visualizer>
     </mat-sidenav>
     <mat-sidenav-content>
+
+        <div [umlThree]="objects | async" [visibleNodes]="selectedNodes$ | async" class="canvas"></div>
     </mat-sidenav-content>
 </mat-sidenav-container>
 

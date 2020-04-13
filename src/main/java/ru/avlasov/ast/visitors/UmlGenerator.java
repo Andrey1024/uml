@@ -1,13 +1,15 @@
 package ru.avlasov.ast.visitors;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import org.eclipse.uml2.uml.Model;
+import org.eclipse.uml2.uml.*;
+import org.eclipse.uml2.uml.Class;
 import org.eclipse.uml2.uml.Package;
-import org.eclipse.uml2.uml.UMLFactory;
 
 import java.util.List;
 
@@ -43,12 +45,38 @@ public class UmlGenerator {
                 }
 
                 if (type.isInterface()) {
-                    thePackage.createOwnedInterface(type.getName());
+                    Interface ownedInterface = thePackage.createOwnedInterface(type.getName());
+                    setFields(n, ownedInterface);
+                    setMethods(n, ownedInterface);
                 } else if (type.isClass()) {
-                    thePackage.createOwnedClass(type.getClassName(), false);
+                    Class clazz = thePackage.createOwnedClass(type.getClassName(), false);
+                    setFields(n, clazz);
+                    setMethods(n, clazz);
                 }
+
+
                 super.visit(n, arg);
             }
         }.visit(cu, null);
+    }
+
+    private void setFields(ClassOrInterfaceDeclaration clazz, AttributeOwner attributeOwner) {
+        new VoidVisitorAdapter<Object>() {
+            @Override
+            public void visit(FieldDeclaration n, Object arg) {
+                for (VariableDeclarator v: n.getVariables()) {
+                    attributeOwner.createOwnedAttribute(v.getNameAsString(), model.getOwnedType(v.getTypeAsString()));
+                }
+            }
+        }.visit(clazz, null);
+    }
+
+    private void setMethods(ClassOrInterfaceDeclaration clazz, OperationOwner operationOwner) {
+        new VoidVisitorAdapter<Object>() {
+            @Override
+            public void visit(MethodDeclaration n, Object arg) {
+                operationOwner.createOwnedOperation(n.getNameAsString(), null, null);
+            }
+        }.visit(clazz, null);
     }
 }
