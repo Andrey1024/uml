@@ -66,19 +66,24 @@ function getHierarchy(data, path: string, version: string): Hierarchy {
         return null;
     }
     return el.type === 'CONTAINER'
-        ? el.children.reduce((acc, cur) => ({ ...acc, [cur]: getHierarchy(data, cur, version) }), {})
+        ? el.children.reduce((acc, cur) => {
+            const name = cur.substring(el.fullPath ? el.fullPath.length + 1 : 0);
+            return { ...acc, [name]: getHierarchy(data, cur, version) }
+        }, {})
+
         : el;
 }
 
-function buildItemTree(obj: { [key: string]: Hierarchy }, level: number = 0): ItemNode[] {
+function buildItemTree(obj: { [key: string]: Hierarchy }, level: number = 0, parent = ''): ItemNode[] {
     return Object.keys(obj).reduce<ItemNode[]>((accumulator, key) => {
         const value = obj[key];
-        const node = new ItemNode(key);
+        const fullPath = parent ? `${parent}.${key}` : key;
+        const node = new ItemNode(parent);
 
         if (!!value) {
             if (!value.type) {
                 node.label = key;
-                node.children = buildItemTree(value, level + 1);
+                node.children = buildItemTree(value, level + 1, fullPath);
             } else {
                 node.label = <any>value.name;
             }

@@ -1,16 +1,20 @@
 package ru.avlasov.web;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.uml2.uml.Model;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.avlasov.ast.ProjectParser;
-import ru.avlasov.ast.nodes.Project;
+import ru.avlasov.ast.ResourceUtil;
 import ru.avlasov.reverse.Reverser;
 import ru.avlasov.reverse.model.ProjectStructure;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 public class UmlController {
@@ -33,8 +37,25 @@ public class UmlController {
 
     @GetMapping("api/model")
     public List<ProjectStructure> getModel() throws IOException, GitAPIException {
-        return Arrays.asList(new ProjectStructure("Alink", "0",
-                this.reverser.reverse(new ProjectParser("https://github.com/alibaba/Alink.git", "UML").parse())));
+        ProjectParser parser = new ProjectParser("https://github.com/ReactiveX/RxJava.git");
+        List<ProjectStructure> result = new ArrayList<>();
+        List<String> tags = parser.listTags();
+        tags = tags.subList(tags.size() - Math.min(5, tags.size()), tags.size());
+        for(String tag: tags) {
+            Model model = null;
+            try {
+                model = ResourceUtil.loadModel("Rx", tag);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            if (model == null) {
+                model = parser.parseTag(tag);
+                ResourceUtil.saveModel(model, "Rx", tag);
+            }
+            result.add(new ProjectStructure("Rx", tag, this.reverser.reverse(model)));
+        }
+        parser.clean();
+        return result;
     }
 
 }
