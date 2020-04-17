@@ -45,8 +45,9 @@ export class SetRoot {
 export class Focus {
     static readonly type = '[Code Structure] focus';
 
-    constructor(public name: string) { }
-    
+    constructor(public name: string) {
+    }
+
 }
 
 export interface CodeStructureStateModel {
@@ -67,30 +68,19 @@ function getHierarchy(data, path: string, version: string): Hierarchy {
     }
     return el.type === 'CONTAINER'
         ? el.children.reduce((acc, cur) => {
-            const name = cur.substring(el.fullPath ? el.fullPath.length + 1 : 0);
-            return { ...acc, [name]: getHierarchy(data, cur, version) }
+            return { ...acc, [cur]: getHierarchy(data, cur, version) }
         }, {})
-
         : el;
 }
 
-function buildItemTree(obj: { [key: string]: Hierarchy }, level: number = 0, parent = ''): ItemNode[] {
-    return Object.keys(obj).reduce<ItemNode[]>((accumulator, key) => {
-        const value = obj[key];
-        const fullPath = parent ? `${parent}.${key}` : key;
-        const node = new ItemNode(parent);
+function buildItemTree(data, path: string, version: string): ItemNode[] {
+    const el = data[path][version];
 
-        if (!!value) {
-            if (!value.type) {
-                node.label = key;
-                node.children = buildItemTree(value, level + 1, fullPath);
-            } else {
-                node.label = <any>value.name;
-            }
-        }
+    return el.type === 'CONTAINER'
+        ? el.children
+            .map(child => new ItemNode(data[child][version].fullPath, data[child][version].name, buildItemTree(data, child, version)))
+        : null;
 
-        return accumulator.concat(node);
-    }, []);
 }
 
 @State<CodeStructureStateModel>({
@@ -152,12 +142,12 @@ export class CodeStructureState {
         return getHierarchy(data, rootPath, versions[version]);
     }
 
-    @Selector([CodeStructureState.getHierarchy])
-    static getTreeItems(hierarchy) {
-        if (hierarchy === null) {
+    @Selector([CodeStructureState.isLoaded, CodeStructureState.getRootPath, CodeStructureState.getVersion, CodeStructureState.getVersions, CodeStructureState.getData])
+    static getTreeItems(loaded, rootPath, version, versions, data) {
+        if (!loaded) {
             return [];
         }
-        return buildItemTree(hierarchy);
+        return buildItemTree(data, rootPath, versions[version]);
     }
 
     @Selector([CodeStructureState])
@@ -209,7 +199,7 @@ export class CodeStructureState {
     @Action(Focus)
     focusObject(ctx: StateContext<CodeStructureStateModel>, { name }: Focus) {
         if (ctx.getState().highLight !== name) {
-            ctx.patchState({highLight: name});
+            ctx.patchState({ highLight: name });
         }
     }
 }

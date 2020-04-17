@@ -43,10 +43,6 @@ public class Node {
         this.name = name;
     }
 
-    public List<String> collectPaths() {
-        return Arrays.asList(this.fullPath);
-    }
-
     public Node() {
 
     }

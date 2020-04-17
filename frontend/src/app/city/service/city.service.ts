@@ -1,9 +1,7 @@
-import { Injectable, InjectionToken } from '@angular/core';
+import { Injectable } from '@angular/core';
 import * as THREE from 'three';
 import { LayoutService } from './layout.service';
-import * as d3 from 'd3-hierarchy';
-import { HierarchyRectangularNode, TreemapLayout } from 'd3-hierarchy';
-import { last, map } from 'lodash-es';
+import { map } from 'lodash-es';
 import { Overlay } from '@angular/cdk/overlay';
 import { FontService } from './font.service';
 import { Hierarchy } from "../model/hierarchy.model";

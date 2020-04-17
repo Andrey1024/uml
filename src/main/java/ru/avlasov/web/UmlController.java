@@ -12,9 +12,9 @@ import ru.avlasov.reverse.model.ProjectStructure;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @RestController
 public class UmlController {
@@ -37,22 +37,23 @@ public class UmlController {
 
     @GetMapping("api/model")
     public List<ProjectStructure> getModel() throws IOException, GitAPIException {
-        ProjectParser parser = new ProjectParser("https://github.com/ReactiveX/RxJava.git");
+        String repositoryUrl = "https://github.com/swagger-api/swagger-core.git";
+        String name = "Swagger";
+        ProjectParser parser = new ProjectParser(repositoryUrl);
         List<ProjectStructure> result = new ArrayList<>();
-        List<String> tags = parser.listTags();
-        tags = tags.subList(tags.size() - Math.min(5, tags.size()), tags.size());
-        for(String tag: tags) {
+        List<ProjectParser.CommitInfo> commits = parser.listCommits();
+        for(ProjectParser.CommitInfo commit: commits) {
             Model model = null;
             try {
-                model = ResourceUtil.loadModel("Rx", tag);
+                model = ResourceUtil.loadModel("cache", name + commit.getCommit());
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
             if (model == null) {
-                model = parser.parseTag(tag);
-                ResourceUtil.saveModel(model, "Rx", tag);
+                model = parser.parseCommit(commit.getCommit());
+                ResourceUtil.saveModel(model, "cache", name + commit.getCommit());
             }
-            result.add(new ProjectStructure("Rx", tag, this.reverser.reverse(model)));
+            result.add(new ProjectStructure(name, commit.getDate(), this.reverser.reverse(model)));
         }
         parser.clean();
         return result;

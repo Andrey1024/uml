@@ -1,8 +1,5 @@
 export class ItemNode {
-    children: ItemNode[];
-    label: string;
-
-    constructor(public item: string) {
+    constructor(public item: string, public label: string, public children: ItemNode[]) {
     }
 
 }

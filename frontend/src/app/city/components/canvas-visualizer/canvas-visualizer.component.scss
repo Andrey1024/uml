@@ -1,9 +1,48 @@
-.fullscreen {
-  position: absolute;
-  top: 60px;
-  bottom: 0;
-  left: 0;
-  right: 0;
+:host {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mat-toolbar {
+  flex: none;
+}
+
+.page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+
+  .canvas {
+    flex: 7;
+  }
+
+  .tree {
+    flex: 3;
+    overflow-y: auto;
+    padding: 10px;
+
+    .tree-header {
+      display: flex;
+      align-items: center;
+    }
+  }
+}
+
+.version-container {
+  display: flex;
+  width: 100%;
+}
+
+.version-bar {
+  flex: none;
+  height: 72px;
+  align-items: flex-end;
+  .mat-slider {
+    width: 100%;
+  }
 }
 
 .canvas {
@@ -11,3 +50,13 @@
     height: 100%;
 }
 
+
+.root-path {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.mat-tab-link {
+  height: 64px;
+  font-size: 20px;
+}

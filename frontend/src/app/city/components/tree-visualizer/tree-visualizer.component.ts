@@ -8,8 +8,6 @@ import {
     Output,
     SimpleChanges
 } from '@angular/core';
-import { ProjectVersioned } from "../../model/project-versioned.model";
-import { Hierarchy } from "../../model/hierarchy.model";
 import { ItemFlatNode, ItemNode } from "../../model/tree-item.model";
 import { FlatTreeControl } from "@angular/cdk/tree";
 import { MatTreeFlatDataSource, MatTreeFlattener } from "@angular/material/tree";
@@ -111,10 +109,9 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
     /** Whether all the descendants of the node are selected. */
     descendantsAllSelected(node: ItemFlatNode): boolean {
         const descendants = this.treeControl.getDescendants(node);
-        const descAllSelected = descendants.every(child =>
+        return descendants.every(child =>
             this.selected.has(child.item)
         );
-        return descAllSelected;
     }
 
     /** Whether part of the descendants are selected */

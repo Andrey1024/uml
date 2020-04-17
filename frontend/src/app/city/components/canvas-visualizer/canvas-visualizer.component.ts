@@ -3,7 +3,7 @@ import { LayoutService } from '../../service/layout.service';
 import { Observable } from 'rxjs/internal/Observable';
 import { filter, map, skipUntil, startWith } from 'rxjs/operators';
 import { FormControl } from '@angular/forms';
-import { combineLatest } from 'rxjs';
+import { BehaviorSubject, combineLatest, Subject } from 'rxjs';
 import * as THREE from 'three';
 import { Select, Store, Actions } from "@ngxs/store";
 import {
@@ -55,15 +55,14 @@ export class CanvasVisualizerComponent implements OnInit, AfterViewInit {
     @Select(CodeStructureState.getHighLight)
     highLight$: Observable<string>;
 
-    selectedLayout = new FormControl();
+    selectedLayout = new BehaviorSubject(this.layouts[0].name);
 
     objects: Observable<THREE.Object3D[]>;
 
 
     constructor(private store: Store, private actions$: Actions, @Inject(LayoutService) private layouts: LayoutService[]) {
-        this.selectedLayout.setValue(layouts[0].name);
         this.objects = combineLatest([
-            this.selectedLayout.valueChanges.pipe(startWith(this.selectedLayout.value)),
+            this.selectedLayout,
             this.selectedData$
         ]).pipe(
             skipUntil(this.isLoaded$.pipe(filter(s => s))),
