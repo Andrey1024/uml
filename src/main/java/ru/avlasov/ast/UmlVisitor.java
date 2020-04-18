@@ -46,6 +46,7 @@ public class UmlVisitor {
             @Override
             public void visit(ClassOrInterfaceDeclaration n, Object arg) {
                 ResolvedReferenceTypeDeclaration type = n.resolve();
+                if (type.getPackageName().isEmpty()) return;
                 Package thePackage = getParentPackage(type.getPackageName());
 
                 if (type.isInterface()) {

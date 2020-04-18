@@ -24,7 +24,6 @@ import { ComponentPortal } from '@angular/cdk/portal';
 export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
     @Input() visibleNodes: Set<string>;
-    @Input() citySize = 1500;
     @Output() select = new EventEmitter();
 
     tooltipEl: HTMLDivElement;
@@ -94,17 +93,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         dirLight.position.set(1, 0, 1);
         dirLight.castShadow = false;
 
-        const lights = new Array(1).fill(0)
-            .map(() => new THREE.PointLight(0xffffff, 0.6, 0, 0));
-        lights.forEach(light => {
-            light.castShadow = true;
-            light.shadow.mapSize.width = 1024;
-            light.shadow.mapSize.height = 1024;
-            light.shadow.camera.near = 0.5;
-            light.shadow.camera.far = 1500;
-        });
-
-        lights[0].position.set(-this.citySize - 200, 600, -this.citySize - 200);
+        // lights[0].position.set(-this.citySize - 200, 600, -this.citySize - 200);
         this.scene.add(directionalLight);
         // this.scene.add(dirLight);
         this.scene.add(directionalLight.target);

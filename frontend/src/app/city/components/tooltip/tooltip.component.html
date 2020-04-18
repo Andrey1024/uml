@@ -10,3 +10,7 @@
     <span>Количество методов:</span>
     <span>{{ object['methodsCount'] }}</span>
 </div>
+<div *ngIf="object.type === 'CLASS' || object.type === 'INTERFACE'" class="info">
+    <span>Количество полей:</span>
+    <span>{{ object['attributesCount'] }}</span>
+</div>

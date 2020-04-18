@@ -51,7 +51,7 @@ public class ProjectParser {
             for (RevCommit rev : walk) {
                 count++;
             }
-            step = count / 5;
+            step = count / 10;
             walk.dispose();
         }
 

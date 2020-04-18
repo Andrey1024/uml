@@ -4,7 +4,7 @@ import { tap } from "rxjs/operators";
 import { patch } from "@ngxs/store/operators";
 import { Hierarchy } from "../model/hierarchy.model";
 import { ProjectModel } from "../model/server-model/project.model";
-import { NodeVersioned } from "../model/node-versioned.model";
+import { NodeVersioned } from "../model/versioned/node-versioned.model";
 import { Injectable } from "@angular/core";
 import { ItemNode } from "../model/tree-item.model";
 
