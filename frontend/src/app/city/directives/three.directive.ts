@@ -63,17 +63,16 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
             minHeight: 20
         });
 
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        // this.renderer.shadowCameraNear = 3;
-        // this.renderer.shadowCameraFar = this.camera.far;
-        // this.renderer.shadowCameraFov = 50;
-        // this.renderer.shadowMapBias = 0.0039;
-        // this.renderer.shadowMapDarkness = 0.5;
-        // this.renderer.shadowMapWidth = 1024;
-        // this.renderer.shadowMapHeight = 1024;
-        const axesHelper = new THREE.AxesHelper( 50 );
-        this.scene.add(axesHelper);
+        // this.renderer.shadowMap.enabled = true;
+        // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // const renderer = <any>this.renderer;
+        // renderer.shadowCameraNear = 3;
+        // renderer.shadowCameraFar = this.camera.far;
+        // renderer.shadowCameraFov = 50;
+        // renderer.shadowMapBias = 0.0039;
+        // renderer.shadowMapDarkness = 0.5;
+        // renderer.shadowMapWidth = 1024;
+        // renderer.shadowMapHeight = 1024;
         this.camera.lookAt(0, 0, 0);
         this.controls.getObject().position.set(0, 300, 300);
         this.scene.add(this.controls.getObject());
@@ -91,7 +90,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         directionalLight.shadow.camera.bottom = -750;
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
         dirLight.position.set(1, 0, 1);
-        dirLight.castShadow = false;
+        // dirLight.castShadow = false;
 
         // lights[0].position.set(-this.citySize - 200, 600, -this.citySize - 200);
         this.scene.add(directionalLight);
@@ -252,17 +251,15 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         this.rayCaster.setFromCamera(this.mouse, this.camera);
 
         const intersects = this.rayCaster.intersectObjects(this.objects, true);
-        // calculate objects intersecting the picking ray
-        // this.objects[0].ra
 
         if (this.intersected !== null) {
             this.intersected['material'].color.setHex(this.intersected['savedColor']);
         }
-        if (intersects.length > 0) {
+        if (intersects.length > 0 && intersects[0].object.userData && intersects[0].object.userData.data) {
+            this.intersected = intersects[0].object;
             if (!this.tooltipOverlay.hasAttached()) {
                 this.tooltipComponent = this.tooltipOverlay.attach(new ComponentPortal(TooltipComponent));
             }
-            this.intersected = intersects[0].object;
             this.intersected['savedColor'] = this.intersected['material'].color.getHex();
             this.intersected['material'].color.setHex(0xff0000);
             this.tooltipComponent.instance.object = this.intersected.userData.data;

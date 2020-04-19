@@ -1,6 +1,6 @@
 import { Action, Selector, State, StateContext } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
-import { tap } from "rxjs/operators";
+import { map, tap } from "rxjs/operators";
 import { patch } from "@ngxs/store/operators";
 import { Hierarchy } from "../model/hierarchy.model";
 import { ProjectModel } from "../model/server-model/project.model";
@@ -62,23 +62,39 @@ export interface CodeStructureStateModel {
 }
 
 function getHierarchy(data, path: string, version: string): Hierarchy {
-    const el = data[path][version];
+    let el = data[path][version];
     if (el === undefined) {
         return null;
     }
+
     return el.type === 'CONTAINER'
         ? el.children.reduce((acc, cur) => {
-            return { ...acc, [cur]: getHierarchy(data, cur, version) }
+            let child = data[cur][version];
+            let name = cur;
+            while (child.type === 'CONTAINER' && child.children.length === 1) {
+                child = data[child.children[0]][version];
+                name = child.fullPath;
+            }
+            return { ...acc, [name]: getHierarchy(data, name, version) }
         }, {})
         : el;
 }
 
 function buildItemTree(data, path: string, version: string): ItemNode[] {
-    const el = data[path][version];
+    let el = data[path][version];
 
     return el.type === 'CONTAINER'
         ? el.children
-            .map(child => new ItemNode(data[child][version].fullPath, data[child][version].name, buildItemTree(data, child, version)))
+            .map(childPath => {
+                let child = data[childPath][version];
+                let name = child.name;
+                while (child.type === 'CONTAINER' && child.children.length === 1) {
+                    child = data[child.children[0]][version];
+                    name = name ? `${name}.${child.name}` : child.name;
+                }
+
+                return new ItemNode(child.fullPath, name, buildItemTree(data, child.fullPath, version));
+            })
         : null;
 
 }
@@ -166,11 +182,14 @@ export class CodeStructureState {
                 const versions = results.map(v => v.version);
                 const name = results[0].name;
                 const data = {};
-                results.forEach(project => {
+                results.forEach((project, i) => {
                     project.data.forEach(el => {
                         const fullPath = el.fullPath === null ? rootPath : el.fullPath;
                         data[fullPath] = data[fullPath] ? data[fullPath] : {};
-                        data[fullPath][project.version] = { ...el, lifeSpan: Object.keys(data[fullPath]).length };
+                        data[fullPath][project.version] = {
+                            ...el,
+                            lifeSpan: (Object.keys(data[fullPath]).length + 1) / (i + 1)
+                        };
                     });
                 });
                 ctx.setState(patch<CodeStructureStateModel>({

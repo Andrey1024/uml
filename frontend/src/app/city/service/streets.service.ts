@@ -39,7 +39,7 @@ export class StreetsService implements LayoutService {
         return [res];
     }
 
-    private process(hierarchy: any, name: string = '', depth = 1): THREE.Object3D {
+    private process(hierarchy: any, name: string = null, depth = 1): THREE.Object3D {
         return hierarchy.type
             ? this.createElementMesh(hierarchy)
             : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k, depth + 1)), name, depth);
@@ -66,18 +66,17 @@ export class StreetsService implements LayoutService {
         const material = new THREE.MeshPhongMaterial({
             color, side: THREE.DoubleSide
         });
-        const old = node.lifeSpan * 5;
         let geometry: THREE.Geometry;
         switch (node.type) {
             default:
             case 'CLASS':
                 geometry = new THREE.BoxGeometry(props.width, props.height, props.width)
-                    .translate(0, node.lifeSpan * 5, 0);
+                    .translate(0, node.lifeSpan * 50, 0);
                 break;
             case 'INTERFACE':
                 const rad = props.width / 2;
                 geometry = new THREE.CylinderGeometry(rad, rad, props.height, 32, 32)
-                    .translate(0, node.lifeSpan * 5, 0);
+                    .translate(0, node.lifeSpan * 50, 0);
                 break;
         }
         const mesh = new THREE.Mesh(geometry, material);
@@ -142,8 +141,8 @@ export class StreetsService implements LayoutService {
             const childData = children[i].userData as UserData;
             if (childData.lifeSpan < lastAge) {
                 const maxOffset = Math.max(leftOffset, rightOffset);
-                geometry.merge(createSegment(lastSegment, maxOffset - lastSegment, lastAge * 5));
-                geometry.merge(createBridge(maxOffset, lastAge * 5, childData.lifeSpan * 5));
+                geometry.merge(createSegment(lastSegment, maxOffset - lastSegment, lastAge * 50));
+                geometry.merge(createBridge(maxOffset, lastAge * 50, childData.lifeSpan * 50));
                 lastSegment = leftOffset = rightOffset = maxOffset + this.padding;
             }
 
@@ -164,9 +163,9 @@ export class StreetsService implements LayoutService {
             lastAge = childData.lifeSpan;
         }
 
-        const lifeSpan = first(children).userData.lifeSpan;
+        const lifeSpan = Math.max(...children.map(c => c.userData.lifeSpan));
         const length = Math.max(leftOffset, rightOffset) + this.padding;
-        geometry.merge(createSegment(lastSegment, length - lastSegment, lastAge * 5));
+        geometry.merge(createSegment(lastSegment, length - lastSegment, lastAge * 50));
         geometry.computeFaceNormals();
 
 
@@ -178,19 +177,20 @@ export class StreetsService implements LayoutService {
         mesh.name = name;
         mesh.matrixAutoUpdate = false;
         mesh.matrixWorldNeedsUpdate = true;
-        mesh.userData = {data: {type: 'PACKAGE', name}};
         packageGroup.add(mesh, ...children);
-        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, -(lifeSpan - lastAge) * 2.5, (left - right) / 2));
+        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, -(lifeSpan - lastAge) * 25, (left - right) / 2));
 
-
-        packageGroup.userData = <UserData> {
-            width: width + left + right,
-            length,
-            height: (lifeSpan - lastAge) * 5,
-            lifeSpan,
-            name,
-            data: {type: 'PACKAGE', name}
-        };
+        if (name !== null) {
+            mesh.userData = { data: { type: 'PACKAGE', name } };
+            packageGroup.userData = <UserData> {
+                width: width + left + right,
+                length,
+                height: (lifeSpan - lastAge) * 50,
+                lifeSpan,
+                name,
+                data: { type: 'PACKAGE', name }
+            };
+        }
 
         return packageGroup;
     }

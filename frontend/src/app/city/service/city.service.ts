@@ -44,7 +44,7 @@ export class CityService implements LayoutService {
         return [res];
     }
 
-    private process(hierarchy: any, name: string = ''): THREE.Object3D {
+    private process(hierarchy: any, name: string = null): THREE.Object3D {
         return hierarchy.type
             ? this.createElementMesh(hierarchy)
             : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k)), name);
@@ -68,7 +68,7 @@ export class CityService implements LayoutService {
 
     private createElementMesh(node: ElementModel): THREE.Object3D {
         const props = this.getElementProps(node);
-        const color = new THREE.Color('green');
+        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), node.lifeSpan);
         const material = new THREE.MeshPhongMaterial({
             color, side: THREE.DoubleSide
         });
@@ -97,6 +97,8 @@ export class CityService implements LayoutService {
             height: props.height,
             data: node
         };
+        mesh.receiveShadow = true;
+        mesh.castShadow = true;
         return mesh;
     }
 
@@ -114,29 +116,36 @@ export class CityService implements LayoutService {
                 return a.userData.name.localeCompare(b.userData.name);
             }
         })];
+        const lifeSpan = Math.max(...children.map(c => c.userData.lifeSpan));
+
 
         const grid = new Grid(children);
         const packageGroup = grid.finalize();
         const packageSize = grid.dimensions;
 
-        const color = new THREE.Color('blue');
+        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), lifeSpan);
         const material = new THREE.MeshPhongMaterial({ color });
-        const geometry = new THREE.BoxGeometry(packageSize.x, 30, packageSize.z).translate(0, -15, 0);
+        const geometry = name === null
+            ? new THREE.PlaneGeometry(packageSize.x, packageSize.z).rotateX(-Math.PI / 2)
+            : new THREE.BoxGeometry(packageSize.x, 30, packageSize.z).translate(0, -15, 0);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = name;
         mesh.matrixAutoUpdate = false;
         mesh.matrixWorldNeedsUpdate = true;
-        mesh.userData = { data: { type: 'PACKAGE', name } };
+        mesh.receiveShadow = true;
         packageGroup.add(mesh);
-        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(0, 15, 0));
+        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(0, 30, 0));
 
-        packageGroup.userData = <UserData> {
-            length: packageSize.x + this.padding * 2,
-            width: packageSize.z + this.padding * 2,
-            height: packageSize.y + 30,
-            name,
-            data: { type: 'PACKAGE', name }
-        };
+        if (name !== null) {
+            mesh.userData = { data: { type: 'PACKAGE', name } };
+            packageGroup.userData = <UserData> {
+                length: packageSize.x + this.padding * 2,
+                width: packageSize.z + this.padding * 2,
+                height: packageSize.y + 30,
+                lifeSpan,
+                name
+            };
+        }
 
         return packageGroup;
     }
