@@ -44,6 +44,8 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
 
     dataSource: MatTreeFlatDataSource<ItemNode, ItemFlatNode>;
 
+    selectedSet: Set<string>;
+
     /** The selection for checklist */
 
     constructor() {

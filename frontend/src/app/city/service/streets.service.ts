@@ -3,7 +3,7 @@ import { LayoutService } from './layout.service';
 import * as THREE from 'three';
 import { Hierarchy } from "../model/hierarchy.model";
 import { first, map } from "lodash-es";
-import { ElementModel } from "../model/server-model/element.model";
+import { Element } from "../model/server-model/element";
 
 interface UserData {
     width: number;
@@ -45,7 +45,7 @@ export class StreetsService implements LayoutService {
             : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k, depth + 1)), name, depth);
     }
 
-    private getElementProps(el: ElementModel): { width: number, height: number } {
+    private getElementProps(el: Element): { width: number, height: number } {
         switch (el.type) {
             case "CLASS":
             case "INTERFACE":
@@ -60,7 +60,7 @@ export class StreetsService implements LayoutService {
         }
     }
 
-    private createElementMesh(node: ElementModel): THREE.Object3D {
+    private createElementMesh(node: Element): THREE.Object3D {
         const props = this.getElementProps(node);
         const color = new THREE.Color('green');
         const material = new THREE.MeshPhongMaterial({

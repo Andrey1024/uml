@@ -5,7 +5,7 @@ import { map } from 'lodash-es';
 import { Overlay } from '@angular/cdk/overlay';
 import { FontService } from './font.service';
 import { Hierarchy } from "../model/hierarchy.model";
-import { ElementModel } from "../model/server-model/element.model";
+import { Element } from "../model/server-model/element";
 import { Grid } from "../model/grid.model";
 
 interface UserData {
@@ -50,7 +50,7 @@ export class CityService implements LayoutService {
             : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k)), name);
     }
 
-    private getElementProps(el: ElementModel): { size: number, height: number } {
+    private getElementProps(el: Element): { size: number, height: number } {
         switch (el.type) {
             case "CLASS":
             case "INTERFACE":
@@ -66,7 +66,7 @@ export class CityService implements LayoutService {
     }
 
 
-    private createElementMesh(node: ElementModel): THREE.Object3D {
+    private createElementMesh(node: Element): THREE.Object3D {
         const props = this.getElementProps(node);
         const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), node.lifeSpan);
         const material = new THREE.MeshPhongMaterial({

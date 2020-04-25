@@ -1,0 +1,11 @@
+<cdk-virtual-scroll-viewport class="list-container" itemSize="70">
+    <mat-action-list>
+        <ng-container *cdkVirtualFor="let commit of commits">
+            <button mat-list-item (click)="load.emit(commit)">
+                <h3 matLine>{{ commit.shortMessage }}</h3>
+                <p matLine>{{ commit.author.name }}</p>
+                <p matLine>{{ commit.date | date : "dd-MM-yyyy" }}</p>
+            </button>
+        </ng-container>
+    </mat-action-list>
+</cdk-virtual-scroll-viewport>

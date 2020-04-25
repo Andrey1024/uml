@@ -5,7 +5,7 @@ import org.eclipse.uml2.uml.Class;
 import org.eclipse.uml2.uml.Package;
 import org.springframework.stereotype.Service;
 import ru.avlasov.reverse.model.*;
-import ru.avlasov.reverse.model.Node;
+import ru.avlasov.reverse.model.Element;
 import uml.java.reverser.asm.AsmBytecodeReverser;
 
 import javax.annotation.PostConstruct;
@@ -28,7 +28,7 @@ public class Reverser {
         trace = new LogProgressTracing(log);
     }
 
-    public List<Node> reverse(String path) {
+    public List<Element> reverse(String path) {
         String rootPath = new File(".").getAbsolutePath().replace(".", "");
         Model model = UMLFactory.eINSTANCE.createModel();
         reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat(path)), model, trace);
@@ -36,15 +36,15 @@ public class Reverser {
         return reverse(model);
     }
 
-    public List<Node> reverse(Model model) {
-        List<Node> elements = new ArrayList<>();
+    public List<Element> reverse(Model model) {
+        List<Element> elements = new ArrayList<>();
         ContainerNode pack = new ContainerNode();
         elements.add(pack);
         addNestedNodes(elements, model, pack, null);
         return elements;
     }
 
-    private void addNestedNodes(List<Node> elements, Package ownerPackage, ContainerNode entity, String path) {
+    private void addNestedNodes(List<Element> elements, Package ownerPackage, ContainerNode entity, String path) {
         entity.setName(ownerPackage.getName());
         entity.setFullPath(path == null ? ownerPackage.getName() : path + "." + ownerPackage.getName());
         for (Package ownedPackage : ownerPackage.getNestedPackages()) {
@@ -58,11 +58,11 @@ public class Reverser {
         addClassifiers(elements, ownerPackage, entity);
     }
 
-    private void addClassifiers(List<Node> elements, Package ownerPackage, ContainerNode ownerNode) {
+    private void addClassifiers(List<Element> elements, Package ownerPackage, ContainerNode ownerNode) {
         ownerPackage.getOwnedTypes().stream()
                 .filter(t -> t instanceof Classifier)
                 .forEach(t -> {
-                    Node node = null;
+                    Element node = null;
                     if (t instanceof Class) {
                         node = this.createClassNode((Class) t);
                     } else if (t instanceof Interface) {

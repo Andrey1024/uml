@@ -1,7 +1,6 @@
-export interface NodeModel {
-    type: string;
-    name: string;
-    fullPath: string;
-    parentPackage: string;
-    lifeSpan: number;
+import { ElementModel } from "./element.model";
+
+export interface NodeModel extends ElementModel {
+    authors: { [email: string]: number };
+    sourceRoot: string;
 }

@@ -13,7 +13,7 @@ import { PortalModule } from '@angular/cdk/portal';
 import { ThreeDirective } from './directives/three.directive';
 import { TreeVisualizerComponent } from './components/tree-visualizer/tree-visualizer.component';
 import { NgxsModule } from "@ngxs/store";
-import { CodeStructureState } from "./state/code-structure.state";
+import { RepositoryState } from "./state/repository.state";
 import { MatSliderModule } from "@angular/material/slider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
@@ -21,6 +21,14 @@ import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSidenavModule } from "@angular/material/sidenav";
 import { MatToolbarModule } from "@angular/material/toolbar";
+import { AddRepositoryDialogComponent } from './containers/add-repository-dialog/add-repository-dialog.component';
+import { AddCommitsComponent } from './containers/add-commits/add-commits.component';
+import { CityComponent } from './containers/city/city.component';
+import { RouterModule } from "@angular/router";
+import { CommitsState } from "./state/commits.state";
+import { FlexLayoutModule } from "@angular/flex-layout";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatListModule } from "@angular/material/list";
 
 @NgModule({
     imports: [
@@ -35,18 +43,27 @@ import { MatToolbarModule } from "@angular/material/toolbar";
         MatTreeModule,
         MatToolbarModule,
         MatSliderModule,
-        NgxsModule.forFeature([CodeStructureState]),
+        NgxsModule.forFeature([RepositoryState, CommitsState]),
         MatCheckboxModule,
         MatButtonModule,
         MatInputModule,
         MatIconModule,
-        MatSidenavModule
+        MatSidenavModule,
+        MatChipsModule,
+        MatListModule,
+        RouterModule.forChild([
+            { path: "", component: CanvasVisualizerComponent },
+            { path: ":name", component: CityComponent }]),
+        FlexLayoutModule
     ],
     declarations: [
         CanvasVisualizerComponent,
         TooltipComponent,
         ThreeDirective,
         TreeVisualizerComponent,
+        AddRepositoryDialogComponent,
+        AddCommitsComponent,
+        CityComponent,
     ],
     entryComponents: [
         TooltipComponent

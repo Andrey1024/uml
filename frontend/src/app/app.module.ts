@@ -12,14 +12,19 @@ import { StreetsService } from './city/service/streets.service';
 import { NgxsModule } from "@ngxs/store";
 import { NgxsReduxDevtoolsPluginModule } from "@ngxs/devtools-plugin";
 import { environment } from "../environments/environment";
+import { RouterModule } from "@angular/router";
 
 @NgModule({
     imports: [
         BrowserModule,
         HttpClientModule,
         CityModule,
+        RouterModule.forRoot([]),
         BrowserAnimationsModule,
-        NgxsModule.forRoot([], { selectorOptions: { injectContainerState: false } }),
+        NgxsModule.forRoot([], {
+            selectorOptions: { injectContainerState: false },
+            developmentMode: !environment.production
+        }),
         NgxsReduxDevtoolsPluginModule.forRoot({ disabled: environment.production })
     ],
     declarations: [

@@ -1,7 +1,7 @@
-import { NodeModel } from "./node.model";
+import { ElementModel } from "./element.model";
 
-export interface PackageModel extends NodeModel {
+export interface PackageModel extends ElementModel {
     type: 'CONTAINER';
 
-    children: NodeModel[];
+    children: string[];
 }

@@ -1,0 +1,31 @@
+.city {
+  height: 100%;
+  overflow: hidden;
+}
+
+.footer::ng-deep {
+  .mat-chip-list {
+    width: 100%;
+  }
+
+  .mat-chip-list-wrapper {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    height: 64px;
+    width: 100%;
+  }
+}
+
+.commits-sidenav {
+  width: 300px;
+}
+
+.mat-tab-link {
+  height: 64px;
+  width: 300px;
+  font-size: 20px;
+}
+
+.mat-sidenav.tree-sidenav {
+  width: 400px;
+}

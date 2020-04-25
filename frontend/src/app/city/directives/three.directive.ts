@@ -23,15 +23,19 @@ import { ComponentPortal } from '@angular/cdk/portal';
 })
 export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
-    @Input() visibleNodes: Set<string>;
+    @Input() set visibleNodes(nodes: string[]) {
+        this.visibleNodeSet = new Set(nodes);
+    }
     @Output() select = new EventEmitter();
+
+    private visibleNodeSet: Set<string>;
 
     tooltipEl: HTMLDivElement;
     tooltipComponent: ComponentRef<TooltipComponent>;
     tooltipOverlay: OverlayRef;
 
     private scene = new THREE.Scene();
-    private renderer = new THREE.WebGLRenderer();
+    private renderer = new THREE.WebGLRenderer({alpha: true});
     private camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
     private controls = new PointerLockControls(this.camera);
     private clock = new THREE.Clock();
@@ -63,16 +67,16 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
             minHeight: 20
         });
 
-        // this.renderer.shadowMap.enabled = true;
-        // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        // const renderer = <any>this.renderer;
-        // renderer.shadowCameraNear = 3;
-        // renderer.shadowCameraFar = this.camera.far;
-        // renderer.shadowCameraFov = 50;
-        // renderer.shadowMapBias = 0.0039;
-        // renderer.shadowMapDarkness = 0.5;
-        // renderer.shadowMapWidth = 1024;
-        // renderer.shadowMapHeight = 1024;
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        const renderer = <any>this.renderer;
+        renderer.shadowCameraNear = 3;
+        renderer.shadowCameraFar = this.camera.far;
+        renderer.shadowCameraFov = 50;
+        renderer.shadowMapBias = 0.0039;
+        renderer.shadowMapDarkness = 0.5;
+        renderer.shadowMapWidth = 2048;
+        renderer.shadowMapHeight = 2048;
         this.camera.lookAt(0, 0, 0);
         this.controls.getObject().position.set(0, 300, 300);
         this.scene.add(this.controls.getObject());
@@ -96,6 +100,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         this.scene.add(directionalLight);
         // this.scene.add(dirLight);
         this.scene.add(directionalLight.target);
+        this.scene.background = null;
     }
 
     @HostListener('window:resize', ['$event'])
@@ -194,7 +199,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     toggleVisibility(obj: THREE.Object3D) {
         if (obj.type === 'Group') {
             obj.children.forEach(child => this.toggleVisibility(child));
-        } else obj.visible = !obj.name || this.visibleNodes.has(obj.name);
+        } else obj.visible = !obj.name || this.visibleNodeSet.has(obj.name);
     }
 
     ngOnDestroy(): void {
@@ -244,6 +249,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
 
     private animate() {
         this.animationFrame = requestAnimationFrame(() => this.animate());
+        this.renderer.setClearColor( 0xffffff, 0)
 
         const delta = this.clock.getDelta();
 
