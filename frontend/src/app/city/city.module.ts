@@ -52,7 +52,7 @@ import { MatListModule } from "@angular/material/list";
         MatChipsModule,
         MatListModule,
         RouterModule.forChild([
-            { path: "", component: CanvasVisualizerComponent },
+            { path: "", component: AddRepositoryDialogComponent },
             { path: ":name", component: CityComponent }]),
         FlexLayoutModule
     ],

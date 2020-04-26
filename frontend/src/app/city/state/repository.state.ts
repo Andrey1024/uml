@@ -1,6 +1,6 @@
 import { Action, createSelector, Select, Selector, State, StateContext, StateOperator, Store } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
-import { tap } from "rxjs/operators";
+import {map, tap} from "rxjs/operators";
 import { Hierarchy } from "../model/hierarchy.model";
 import { SourceRoot } from "../model/server-model/source-root.model";
 import { Injectable } from "@angular/core";
@@ -8,8 +8,8 @@ import { ItemNode } from "../model/tree-item.model";
 import { Element } from "../model/server-model/element";
 import { CommitsState, CommitsStateModel } from "./commits.state";
 import { compose, insertItem, patch } from "@ngxs/store/operators";
-import { element } from "protractor";
 import { PatchSpec } from "@ngxs/store/operators/patch";
+import {keyBy, mapValues} from "lodash-es";
 
 export class LoadState {
     static readonly type = '[Repository] load commit state';
@@ -56,7 +56,7 @@ export class Focus {
 
 export interface RepositoryStateModel {
     name: string;
-    data: { [commit: string]: { [fullPath: string]: Element[] } };
+    data: { [path: string]: { [commit: string]: Element } };
     loadedCommits: string[];
     path: string;
     selectedNodes: string[];
@@ -148,19 +148,31 @@ export class RepositoryState {
 
     @Selector([RepositoryState, CommitsState])
     static getLoadedCommits(repository: RepositoryStateModel, commits: CommitsStateModel) {
-        return repository.loadedCommits.map(name => commits.byId[name]).sort((a, b) => +a.date - +b.date);
+        return repository.loadedCommits.map(name => commits.byId[name]).sort((a, b) => +b.date - +a.date);
     }
 
-    @Selector([RepositoryState.getElements, RepositoryState.getRootPath, RepositoryState.getSelectedCommit])
-    static getHierarchy(data, path, commit) {
+    @Selector([RepositoryState.getElements, RepositoryState.getSelectedCommit, RepositoryState.getLoadedCommits])
+    static getCommitElements(data, commit, commits) {
+        if (commit == null) return null;
+        const commitsBefore = [], i = 0;
+        do {
+         commitsBefore.push(commits[i])
+        } while (commits[i].name !== commit);
+        return mapValues(data, el => ({...el[commit],
+            lifeSpan: commitsBefore.filter(c => !!el[c.name]).length / commitsBefore.length
+        }))
+    }
+
+    @Selector([RepositoryState.getCommitElements, RepositoryState.getRootPath])
+    static getHierarchy(data, path, commit, commits) {
         if (data === null || commit === null) return null;
-        return getHierarchy(data[commit], path);
+        return getHierarchy(data, path);
     }
 
-    @Selector([RepositoryState.getElements, RepositoryState.getRootPath, RepositoryState.getSelectedCommit])
+    @Selector([RepositoryState.getCommitElements, RepositoryState.getRootPath])
     static getTreeItems(data, path, commit) {
         if (data === null || commit === null) return null;
-        return buildItemTree(data[commit], path);
+        return buildItemTree(data, path);
     }
 
     @Selector([RepositoryState])
@@ -178,14 +190,23 @@ export class RepositoryState {
             // tap(results => results.data.forEach(data => ctx.setState(patch({
             //     data: patch({ [data.fullPath]: enhancedPatch({ [results.commit]: data }) })
             // }))))
+            map(result => result.data.reduce((acc, cur) => {
+                            acc[cur.fullPath || '_root_'] = cur;
+                            return acc;
+                        }, {})),
             tap(result => ctx.setState(patch({
-                data: patch({
-                    [commit]: result.data.reduce((acc, cur) => {
-                        acc[cur.fullPath || '_root_'] = cur;
-                        return acc;
-                    }, {})
-                })
+                data: patch({[el.fullPath || '_root_']: enhancedPatch({
+                        [result.commit]: el
+                    })})
             }))),
+            // tap(result => ctx.setState(patch({
+            //     data: patch({
+            //         [commit]: result.data.reduce((acc, cur) => {
+            //             acc[cur.fullPath || '_root_'] = cur;
+            //             return acc;
+            //         }, {})
+            //     })
+            // }))),
             tap(result => ctx.setState(patch({
                 selectedNodes: result.data.map(i => i.fullPath),
                 loadedCommits: insertItem(commit)
