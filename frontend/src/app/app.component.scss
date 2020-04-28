@@ -1,0 +1,10 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .mat-toolbar {
+    overflow: visible;
+    z-index: 10;
+  }
+}

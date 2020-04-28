@@ -13,6 +13,8 @@ import { NgxsModule } from "@ngxs/store";
 import { NgxsReduxDevtoolsPluginModule } from "@ngxs/devtools-plugin";
 import { environment } from "../environments/environment";
 import { RouterModule } from "@angular/router";
+import { MatToolbarModule } from "@angular/material/toolbar";
+import { FlexLayoutModule } from "@angular/flex-layout";
 
 @NgModule({
     imports: [
@@ -25,7 +27,9 @@ import { RouterModule } from "@angular/router";
             selectorOptions: { injectContainerState: false },
             developmentMode: !environment.production
         }),
-        NgxsReduxDevtoolsPluginModule.forRoot({ disabled: environment.production })
+        NgxsReduxDevtoolsPluginModule.forRoot({ disabled: environment.production }),
+        MatToolbarModule,
+        FlexLayoutModule
     ],
     declarations: [
         AppComponent

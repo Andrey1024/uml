@@ -12,6 +12,7 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -31,16 +32,14 @@ public class Reverser {
     public List<Element> reverse(String path) {
         String rootPath = new File(".").getAbsolutePath().replace(".", "");
         Model model = UMLFactory.eINSTANCE.createModel();
-        reverser.reverseJarFileCollection(Arrays.asList(rootPath.concat(path)), model, trace);
+        reverser.reverseJarFileCollection(Collections.singletonList(rootPath.concat(path)), model, trace);
 
         return reverse(model);
     }
 
     public List<Element> reverse(Model model) {
         List<Element> elements = new ArrayList<>();
-        ContainerNode pack = new ContainerNode();
-        elements.add(pack);
-        addNestedNodes(elements, model, pack, null);
+        addNestedNodes(elements, model, new ContainerNode(), null);
         return elements;
     }
 
@@ -53,7 +52,7 @@ public class Reverser {
             node.setName(ownedPackage.getName());
             addNestedNodes(elements, ownedPackage, node, entity.getFullPath());
             entity.addChild(node.getFullPath());
-            elements.add(node);
+//            elements.add(node);
         }
         addClassifiers(elements, ownerPackage, entity);
     }

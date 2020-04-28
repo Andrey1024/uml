@@ -1,15 +1,15 @@
-import { Action, createSelector, Select, Selector, State, StateContext, StateOperator, Store } from '@ngxs/store';
+import { Action, Selector, State, StateContext, Store } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
-import {map, tap} from "rxjs/operators";
+import { tap } from "rxjs/operators";
 import { Hierarchy } from "../model/hierarchy.model";
 import { SourceRoot } from "../model/server-model/source-root.model";
 import { Injectable } from "@angular/core";
 import { ItemNode } from "../model/tree-item.model";
 import { Element } from "../model/server-model/element";
-import { CommitsState, CommitsStateModel } from "./commits.state";
-import { compose, insertItem, patch } from "@ngxs/store/operators";
-import { PatchSpec } from "@ngxs/store/operators/patch";
-import {keyBy, mapValues} from "lodash-es";
+import { CommitsState, CommitsStateModel, Load } from "./commits.state";
+import { insertItem, patch } from "@ngxs/store/operators";
+import { keyBy, mapValues, set } from "lodash-es";
+import { Commit } from "../model/server-model/commit.model";
 
 export class LoadState {
     static readonly type = '[Repository] load commit state';
@@ -46,6 +46,13 @@ export class SetRootPath {
     }
 }
 
+export class SelectAuthors {
+    static readonly type = '[Repository] select authors';
+
+    constructor(public authors: string[]) {
+    }
+}
+
 export class Focus {
     static readonly type = '[Repository] focus';
 
@@ -55,69 +62,55 @@ export class Focus {
 }
 
 export interface RepositoryStateModel {
-    name: string;
     data: { [path: string]: { [commit: string]: Element } };
     loadedCommits: string[];
-    path: string;
+    sourceRoot: string;
     selectedNodes: string[];
+    selectedAuthors: string[];
+    path: string;
     commit: string;
     highLight: string;
 }
 
-function getHierarchy(data, path: string): Hierarchy {
-    let el = data[path];
-    if (el === undefined) {
-        return null;
+function collapse(hierarchy): Hierarchy {
+    return Object.keys(hierarchy).reduce((result, path) => {
+        let child = hierarchy[path];
+        let name = path;
+        let children = Object.keys(child);
+        while (children.length === 1 && !child[children[0]].type) {
+            name = `${name}.${children[0]}`;
+            child = child[children[0]];
+            children = Object.keys(child);
+        }
+        result[name] = child;
+        return result
+    }, {})
+}
+
+function createHierarchy(elements: Element[]): Hierarchy {
+    let packageMap: Hierarchy = {};
+    for (const element of elements) {
+        set(packageMap, element.fullPath, element);
     }
 
-    return el.type === 'CONTAINER'
-        ? el.children.reduce((acc, cur) => {
-            let child = data[cur];
-            let name = cur;
-            while (child.type === 'CONTAINER' && child.children.length === 1) {
-                child = data[child.children[0]];
-                name = child.fullPath;
-            }
-            return { ...acc, [name]: getHierarchy(data, name) }
-        }, {})
-        : el;
+    return collapse(packageMap);
 }
 
-function buildItemTree(data, path: string): ItemNode[] {
-    let el = data[path];
-    if (el === undefined) {
-        return null;
-    }
-
-
-    return el.type === 'CONTAINER'
-        ? el.children
-            .map(childPath => {
-                let child = data[childPath];
-                let name = child.name;
-                while (child.type === 'CONTAINER' && child.children.length === 1) {
-                    child = data[child.children[0]];
-                    name = name ? `${name}.${child.name}` : child.name;
-                }
-
-                return new ItemNode(child.fullPath, name, buildItemTree(data, child.fullPath));
-            })
-        : null;
+function createTree(hierarchy: any, pack: string = null): ItemNode[] {
+    return Object.keys(hierarchy).map(path => hierarchy[path].type
+        ? new ItemNode(hierarchy[path].fullPath, hierarchy[path].name, null)
+        : new ItemNode(pack ? `${pack}.${path}` : path, path, createTree(hierarchy[path], pack ? `${pack}.${path}` : path)))
 }
-
-function enhancedPatch<T>(patchObject: PatchSpec<T>): StateOperator<T> {
-    return (state: Readonly<T>) => state ? patch(patchObject)(state) : patch(patchObject)(<any> {});
-}
-
 
 @State<RepositoryStateModel>({
-    name: 'codeStructure',
+    name: 'repository',
     defaults: {
-        name: null,
         data: {},
         loadedCommits: [],
-        path: '_root_',
+        sourceRoot: "",
+        path: "",
         selectedNodes: [],
+        selectedAuthors: [],
         commit: null,
         highLight: null
     },
@@ -130,7 +123,6 @@ export class RepositoryState {
         return state.data;
     }
 
-
     @Selector([RepositoryState])
     static getRootPath(state: RepositoryStateModel) {
         return state.path;
@@ -142,37 +134,81 @@ export class RepositoryState {
     }
 
     @Selector([RepositoryState])
+    static getSelectedAuthors(state: RepositoryStateModel): string[] {
+        return state.selectedAuthors;
+    }
+
+    @Selector([RepositoryState])
     static getSelectedCommit(state: RepositoryStateModel) {
         return state.commit;
     }
 
-    @Selector([RepositoryState, CommitsState])
-    static getLoadedCommits(repository: RepositoryStateModel, commits: CommitsStateModel) {
-        return repository.loadedCommits.map(name => commits.byId[name]).sort((a, b) => +b.date - +a.date);
+    @Selector([RepositoryState])
+    static getLoadedCommitNames(state: RepositoryStateModel): string[] {
+        return state.loadedCommits;
     }
 
-    @Selector([RepositoryState.getElements, RepositoryState.getSelectedCommit, RepositoryState.getLoadedCommits])
-    static getCommitElements(data, commit, commits) {
-        if (commit == null) return null;
-        const commitsBefore = [], i = 0;
+    @Selector([RepositoryState])
+    static getSourceRoot(state: RepositoryStateModel) {
+        return state.sourceRoot;
+    }
+
+    @Selector([RepositoryState.getLoadedCommitNames, CommitsState])
+    static getLoadedCommits(loaded: string[], commits: CommitsStateModel) {
+        return loaded.map(name => commits.byId[name]).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+    }
+
+    @Selector([RepositoryState.getElements, RepositoryState.getSelectedCommit, RepositoryState.getLoadedCommits, RepositoryState.getSelectedAuthors])
+    static getCommitElements(data, commit, commits, authors: string[]): Element[] {
+        if (commit == null) return [];
+        const commitsBefore = [];
+        let i = 0;
         do {
-         commitsBefore.push(commits[i])
-        } while (commits[i].name !== commit);
-        return mapValues(data, el => ({...el[commit],
-            lifeSpan: commitsBefore.filter(c => !!el[c.name]).length / commitsBefore.length
-        }))
+            commitsBefore.push(commits[i])
+        } while (commits[i++].name !== commit);
+        return Object.keys(data).filter(key => !!data[key][commit]).map(path => ({
+            ...data[path][commit],
+            lifeSpan: commitsBefore.filter(c => !!data[path][c]).length / commitsBefore.length,
+            authors: mapValues(data[path][commit], (val, key) => authors.includes(key) ? val : 0)
+        }));
     }
 
-    @Selector([RepositoryState.getCommitElements, RepositoryState.getRootPath])
-    static getHierarchy(data, path, commit, commits) {
-        if (data === null || commit === null) return null;
-        return getHierarchy(data, path);
+    @Selector([RepositoryState.getCommitElements])
+    static getSourceRoots(elements: Element[]): string[] {
+        const roots = new Set<string>();
+        elements.forEach(el => roots.add(el.sourceRoot));
+        return [...roots];
     }
 
-    @Selector([RepositoryState.getCommitElements, RepositoryState.getRootPath])
-    static getTreeItems(data, path, commit) {
-        if (data === null || commit === null) return null;
-        return buildItemTree(data, path);
+    @Selector([RepositoryState.getCommitElements, RepositoryState.getRootPath, RepositoryState.getSourceRoot])
+    static getFilteredElements(elements: Element[], path: string, sourceRoot: string): Element[] {
+        return elements
+            .filter(element => element.fullPath.startsWith(path))
+            .filter(element => sourceRoot === '' ? true : element.sourceRoot === sourceRoot);
+    }
+
+
+    @Selector([RepositoryState.getSelectedCommit, CommitsState.getAllCommits])
+    static getAuthorsWithCount(commit: string, commits: Commit[]): { author: string, count: number }[] {
+        if (commit === null) return [];
+        const authors = new Map<string, number>();
+        let i = 0
+        do {
+            const author = commits[i].author.name;
+            authors.set(author, authors.has(author) ? authors.get(author) + 1 : 1);
+        } while (commits[i++].name !== commit);
+        return [...authors.keys()].map(author => ({ author, count: authors.get(author) }))
+            .sort((a, b) => b.count - a.count);
+    }
+
+    @Selector([RepositoryState.getFilteredElements])
+    static getHierarchy(elements: Element[]) {
+        return createHierarchy(elements);
+    }
+
+    @Selector([RepositoryState.getHierarchy])
+    static getTreeItems(hierarchy) {
+        return createTree(hierarchy);
     }
 
     @Selector([RepositoryState])
@@ -186,38 +222,25 @@ export class RepositoryState {
     @Action(LoadState)
     loadState(ctx: StateContext<RepositoryStateModel>, { commit }: LoadState) {
         const name = this.store.selectSnapshot(CommitsState.getRepositoryName);
+
         return this.http.get<SourceRoot>(`/api/repository/${name}/${commit}`).pipe(
-            // tap(results => results.data.forEach(data => ctx.setState(patch({
-            //     data: patch({ [data.fullPath]: enhancedPatch({ [results.commit]: data }) })
-            // }))))
-            map(result => result.data.reduce((acc, cur) => {
-                            acc[cur.fullPath || '_root_'] = cur;
-                            return acc;
-                        }, {})),
-            tap(result => ctx.setState(patch({
-                data: patch({[el.fullPath || '_root_']: enhancedPatch({
-                        [result.commit]: el
-                    })})
-            }))),
-            // tap(result => ctx.setState(patch({
-            //     data: patch({
-            //         [commit]: result.data.reduce((acc, cur) => {
-            //             acc[cur.fullPath || '_root_'] = cur;
-            //             return acc;
-            //         }, {})
-            //     })
-            // }))),
-            tap(result => ctx.setState(patch({
-                selectedNodes: result.data.map(i => i.fullPath),
-                loadedCommits: insertItem(commit)
-            })))
+            tap(result => {
+                const { data } = ctx.getState();
+                const newData = result.data.reduce((acc, cur) => {
+                    acc[cur.fullPath] = { ...data[cur.fullPath], [commit]: cur };
+                    return acc;
+                }, {})
+                ctx.setState(patch({
+                    data: newData,
+                    loadedCommits: insertItem(commit)
+                }));
+            })
         );
     }
 
-
     @Action(SelectNodes)
     selectNodes(ctx: StateContext<RepositoryStateModel>, { selectedNodes }: SelectNodes) {
-        ctx.patchState({ selectedNodes });
+        ctx.setState(patch({ selectedNodes }));
     }
 
     @Action(SelectCommit)
@@ -227,7 +250,12 @@ export class RepositoryState {
 
     @Action(SelectSourceRoot)
     selectSourceRoot(ctx: StateContext<RepositoryStateModel>, { sourceRoot }: SelectSourceRoot) {
-        // ctx.patchState({ sourceRoot, byPath: });
+        ctx.patchState({ sourceRoot });
+    }
+
+    @Action(SelectAuthors)
+    selectAuthors(ctx: StateContext<RepositoryStateModel>, { authors }: SelectAuthors) {
+        ctx.patchState({ selectedAuthors: authors });
     }
 
     @Action(SetRootPath)
@@ -240,5 +268,20 @@ export class RepositoryState {
         if (ctx.getState().highLight !== name) {
             ctx.patchState({ highLight: name });
         }
+    }
+
+
+    @Action(Load)
+    resetState(ctx: StateContext<RepositoryStateModel>) {
+        ctx.patchState({
+            data: {},
+            loadedCommits: [],
+            sourceRoot: "",
+            path: "",
+            selectedNodes: [],
+            selectedAuthors: [],
+            commit: null,
+            highLight: null
+        })
     }
 }

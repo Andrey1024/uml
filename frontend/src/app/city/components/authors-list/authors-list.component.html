@@ -1,0 +1,7 @@
+<mat-selection-list>
+    <mat-list-option *ngFor="let author of authors"
+                     [selected]="selected.has(author.author)">
+        <h3 matLine>{{author.author}}</h3>
+        <div matLine>Commits: {{author.count}}</div>
+    </mat-list-option>
+</mat-selection-list>

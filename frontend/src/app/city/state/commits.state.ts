@@ -13,12 +13,6 @@ export class Load {
     }
 }
 
-export class Create {
-    static readonly type = '[Repository] create';
-
-    constructor(public name: string, public url: string) {
-    }
-}
 
 export interface CommitsStateModel {
     repositoryName: string;
@@ -45,8 +39,14 @@ export class CommitsState {
 
     @Selector([CommitsState])
     static getAllCommits(state: CommitsStateModel) {
-        return state.ids.map(id => state.byId[id]).sort((a, b) => +a.date - +b.date);
+        return state.ids.map(id => state.byId[id]).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
     }
+
+    @Selector([CommitsState])
+    static getAllCommitsDesc(state: CommitsStateModel) {
+        return state.ids.map(id => state.byId[id]).sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+    }
+
 
     @Selector([CommitsState.getAllCommits])
     static getAuthorList(commits: Commit[]): Author[] {
@@ -63,25 +63,13 @@ export class CommitsState {
 
     @Action(Load)
     openRepository(ctx: StateContext<CommitsStateModel>, { name }: Load) {
-        ctx.patchState({ loaded: false, repositoryName: name });
+        ctx.patchState({ loaded: false, repositoryName: name, byId: {}, ids: [] });
         return this.http.get<Commit[]>(`/api/repository/${name}`).pipe(
             tap(commits => ctx.setState(patch({
                 byId: commits.reduce((res, com) => ({ ...res, [com.name]: com }), {}),
                 ids: commits.map(commit => commit.name)
             }))),
             finalize(() => ctx.patchState({ loaded: true })),
-        );
-    }
-
-    @Action(Create)
-    addRepository(ctx: StateContext<CommitsStateModel>, { name, url }: Create) {
-        ctx.patchState({ loaded: false, repositoryName: name });
-        return this.http.post<Commit[]>(`/api/repository`, { name, url }).pipe(
-            tap(commits => ctx.setState(patch({
-                byId: commits.reduce((res, com) => ({ ...res, [com.name]: com }), {}),
-                ids: commits.map(commit => commit.name)
-            }))),
-            finalize(() => ctx.patchState({ loaded: true }))
         );
     }
 }

@@ -6,6 +6,6 @@ export interface Author {
 export interface Commit {
     name: string;
     author: Author;
-    date: Date;
+    date: string;
     shortMessage: string;
 }

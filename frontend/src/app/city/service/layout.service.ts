@@ -3,5 +3,5 @@ import { Hierarchy } from "../model/hierarchy.model";
 
 export abstract class LayoutService {
     name: string;
-    place: (hierarchy: Hierarchy) => THREE.Object3D[];
+    place: (hierarchy: Hierarchy, options: any) => THREE.Object3D[];
 }

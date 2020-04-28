@@ -33,7 +33,7 @@ export class StreetsService implements LayoutService {
         return steps[i];
     }
 
-    place(hierarchy: Hierarchy): THREE.Object3D[] {
+    place(hierarchy: Hierarchy, options: any): THREE.Object3D[] {
         const res = this.process(hierarchy);
         res.updateMatrixWorld();
         return [res];
@@ -42,7 +42,7 @@ export class StreetsService implements LayoutService {
     private process(hierarchy: any, name: string = null, depth = 1): THREE.Object3D {
         return hierarchy.type
             ? this.createElementMesh(hierarchy)
-            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k, depth + 1)), name, depth);
+            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, name ? `${name}.${k}` : k, depth + 1)), name, depth);
     }
 
     private getElementProps(el: Element): { width: number, height: number } {

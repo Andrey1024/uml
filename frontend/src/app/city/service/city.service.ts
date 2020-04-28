@@ -7,6 +7,7 @@ import { FontService } from './font.service';
 import { Hierarchy } from "../model/hierarchy.model";
 import { Element } from "../model/server-model/element";
 import { Grid } from "../model/grid.model";
+import { NodeModel } from "../model/server-model/node.model";
 
 interface UserData {
     width: number;
@@ -23,6 +24,8 @@ export class CityService implements LayoutService {
 
     readonly padding = 10;
 
+    authorColors = new Map<string, THREE.Color>();
+    colorIndex = 0;
 
     font = this.fontService.font;
 
@@ -31,14 +34,22 @@ export class CityService implements LayoutService {
 
     private static closeValue(value: number, ...steps: number[]): number {
         let i = 0;
-        while (value > steps[i]) {
+        while (value > steps[i] && steps.length > i + 1) {
             i++;
         }
 
         return steps[i];
     }
 
-    place(hierarchy: Hierarchy): THREE.Object3D[] {
+    getAuthorColor(author: string): THREE.Color {
+        if (!this.authorColors.has(author)) {
+            this.authorColors.set(author, new THREE.Color(`hsl(${this.colorIndex}, 100%, 50%)`));
+            this.colorIndex += 70;
+        }
+        return this.authorColors.get(author);
+    }
+
+    place(hierarchy: Hierarchy, options): THREE.Object3D[] {
         const res = this.process(hierarchy);
         res.updateMatrixWorld();
         return [res];
@@ -47,7 +58,7 @@ export class CityService implements LayoutService {
     private process(hierarchy: any, name: string = null): THREE.Object3D {
         return hierarchy.type
             ? this.createElementMesh(hierarchy)
-            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, k)), name);
+            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, name ? `${name}.${k}` : k)), name);
     }
 
     private getElementProps(el: Element): { size: number, height: number } {
@@ -65,6 +76,53 @@ export class CityService implements LayoutService {
         }
     }
 
+    private createAuthorMesh(node: NodeModel): THREE.Object3D {
+        const props = this.getElementProps(node as Element);
+        const result = new THREE.Group();
+        const authors = Object.keys(node.authors)
+            .map(key => ({ author: key, count: node.authors[key] }))
+            .sort((a, b) => b.count - a.count).slice(0, 10);
+        let offset = 0;
+        for (let i = 0; i < authors.length; i++) {
+            const color = this.getAuthorColor(authors[i].author);
+            const material = new THREE.MeshPhongMaterial({
+                color, side: THREE.DoubleSide
+            });
+            let geometry: THREE.Geometry;
+            const height = CityService.closeValue(authors[i].count, 1, 10, 20, 30, 40);
+            switch (node.type) {
+                default:
+                case 'CLASS':
+                    geometry = new THREE.BoxGeometry(props.size, height, props.size)
+                        .translate(0, height / 2 + offset, 0);
+                    break;
+                case 'INTERFACE':
+                    const rad = props.size / 2;
+                    geometry = new THREE.CylinderGeometry(rad, rad, height, 32, 32)
+                        .translate(0, height / 2 + offset, 0);
+                    break;
+            }
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.matrixAutoUpdate = false;
+            mesh.matrixWorldNeedsUpdate = true;
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
+            result.add(mesh);
+            offset += height;
+        }
+        result.name = node.fullPath;
+        result.matrixAutoUpdate = false;
+        result.userData = <UserData> {
+            width: props.size + this.padding * 2,
+            length: props.size + this.padding * 2,
+            lifeSpan: node.lifeSpan,
+            name: node.fullPath,
+            height: offset,
+            data: node
+        };
+        return result;
+
+    }
 
     private createElementMesh(node: Element): THREE.Object3D {
         const props = this.getElementProps(node);

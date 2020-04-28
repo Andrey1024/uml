@@ -28,4 +28,15 @@
 
 .mat-sidenav.tree-sidenav {
   width: 400px;
+  .mat-form-field {
+    width: 100%;
+    padding: 10px;
+  }
+  .tree-tab-group {
+    height: 100%;
+  }
+}
+
+::ng-deep .mat-tab-body-wrapper {
+  flex: 1;
 }

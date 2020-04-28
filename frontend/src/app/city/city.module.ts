@@ -21,7 +21,6 @@ import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSidenavModule } from "@angular/material/sidenav";
 import { MatToolbarModule } from "@angular/material/toolbar";
-import { AddRepositoryDialogComponent } from './containers/add-repository-dialog/add-repository-dialog.component';
 import { AddCommitsComponent } from './containers/add-commits/add-commits.component';
 import { CityComponent } from './containers/city/city.component';
 import { RouterModule } from "@angular/router";
@@ -29,6 +28,12 @@ import { CommitsState } from "./state/commits.state";
 import { FlexLayoutModule } from "@angular/flex-layout";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatListModule } from "@angular/material/list";
+import { AuthorsListComponent } from './components/authors-list/authors-list.component';
+import { RepositoriesPageComponent } from './containers/repositories-page/repositories-page.component';
+import { RepositoriesState } from "./state/repositories.state";
+import { MatCardModule } from "@angular/material/card";
+import { AddRepoDialogComponent } from './components/add-repo-dialog/add-repo-dialog.component';
+import { MatDialogModule } from "@angular/material/dialog";
 
 @NgModule({
     imports: [
@@ -43,8 +48,9 @@ import { MatListModule } from "@angular/material/list";
         MatTreeModule,
         MatToolbarModule,
         MatSliderModule,
-        NgxsModule.forFeature([RepositoryState, CommitsState]),
+        NgxsModule.forFeature([RepositoryState, CommitsState, RepositoriesState]),
         MatCheckboxModule,
+        MatCardModule,
         MatButtonModule,
         MatInputModule,
         MatIconModule,
@@ -52,24 +58,25 @@ import { MatListModule } from "@angular/material/list";
         MatChipsModule,
         MatListModule,
         RouterModule.forChild([
-            { path: "", component: AddRepositoryDialogComponent },
+            { path: "", component: RepositoriesPageComponent },
             { path: ":name", component: CityComponent }]),
-        FlexLayoutModule
+        FlexLayoutModule,
+        MatDialogModule
     ],
     declarations: [
         CanvasVisualizerComponent,
         TooltipComponent,
         ThreeDirective,
         TreeVisualizerComponent,
-        AddRepositoryDialogComponent,
         AddCommitsComponent,
         CityComponent,
+        AuthorsListComponent,
+        RepositoriesPageComponent,
+        AddRepoDialogComponent,
     ],
     entryComponents: [
-        TooltipComponent
-    ],
-    exports: [
-        CanvasVisualizerComponent,
+        TooltipComponent,
+        AddRepoDialogComponent
     ]
 })
 export class CityModule {

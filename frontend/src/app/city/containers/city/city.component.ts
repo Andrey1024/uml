@@ -1,10 +1,17 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { Select, Store } from "@ngxs/store";
-import { BehaviorSubject, Observable, Subject } from "rxjs";
-import { Author, Commit } from "../../model/server-model/commit.model";
+import { BehaviorSubject, Observable } from "rxjs";
+import { Commit } from "../../model/server-model/commit.model";
 import { ActivatedRoute } from "@angular/router";
 import { CommitsState, Load } from "../../state/commits.state";
-import { LoadState, RepositoryState, SelectCommit, SelectSourceRoot } from "../../state/repository.state";
+import {
+    LoadState,
+    RepositoryState,
+    SelectAuthors,
+    SelectCommit,
+    SelectNodes,
+    SelectSourceRoot
+} from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
 import { Hierarchy } from "../../model/hierarchy.model";
 import { LayoutService } from "../../service/layout.service";
@@ -15,7 +22,13 @@ import { LayoutService } from "../../service/layout.service";
     styleUrls: ['./city.component.scss']
 })
 export class CityComponent implements OnInit {
-    @Select(CommitsState.getAllCommits)
+    @Select(CommitsState.getRepositoryName)
+    name$: Observable<string>
+
+    @Select(RepositoryState.getAuthorsWithCount)
+    authors$: Observable<{ author: string, count: number }[]>;
+
+    @Select(CommitsState.getAllCommitsDesc)
     commits$: Observable<Commit[]>;
 
     @Select(CommitsState.isLoaded)
@@ -36,6 +49,15 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getSelectedCommit)
     selectedCommit$: Observable<string>;
 
+    // @Select(RepositoryState.getSelectedAuthors)
+    // selectedAuthors$: Observable<Set<string>>;
+
+    @Select(RepositoryState.getSourceRoots)
+    sourceRoots$: Observable<string[]>;
+
+    @Select(RepositoryState.getSourceRoot)
+    sourceRoot$: Observable<string>
+
     layoutNames = this.layouts.map(layout => layout.name);
     selectedLayout$ = new BehaviorSubject<string>(this.layoutNames[0]);
 
@@ -48,7 +70,7 @@ export class CityComponent implements OnInit {
     ngOnInit(): void {
         this.route.paramMap.subscribe(params => this.store.dispatch(new Load(params.get("name"))).subscribe(() => {
             const commits = this.store.selectSnapshot(CommitsState.getAllCommits);
-            this.store.dispatch([new LoadState(commits[0].name), new LoadState(commits[commits.length - 1].name)]);
+            this.store.dispatch([new LoadState(commits[commits.length - 1].name)]);
         }));
     }
 
@@ -56,11 +78,19 @@ export class CityComponent implements OnInit {
         this.store.dispatch(new SelectCommit(commit.name));
     }
 
+    selectAuthors(authors: string[]) {
+        this.store.dispatch(new SelectAuthors(authors));
+    }
+
     loadCommitState(commit: Commit) {
         this.store.dispatch(new LoadState(commit.name))
     }
 
-    selectSource(path: string) {
-        this.store.dispatch(new SelectSourceRoot(path));
+    selectSourceRoot(root: string) {
+        this.store.dispatch(new SelectSourceRoot(root));
+    }
+
+    selectNodes(nodes: string[]) {
+        this.store.dispatch(new SelectNodes(nodes));
     }
 }

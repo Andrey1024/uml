@@ -8,6 +8,7 @@ import { Commit } from "../../model/server-model/commit.model";
 })
 export class AddCommitsComponent implements OnInit {
   @Input() commits: Commit[];
+  @Input() loaded: Commit[];
   @Output() load = new EventEmitter<Commit>();
 
   constructor() { }

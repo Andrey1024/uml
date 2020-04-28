@@ -28,10 +28,9 @@ public class UmlController {
     }
 
     @PostMapping("/api/repository")
-    public List<Commit> openRepository(@RequestBody CreateRequest body) throws GitAPIException, IOException {
-        System.out.println("wtf");
+    public String addRepository(@RequestBody CreateRequest body) throws GitAPIException, IOException {
         parser.cloneRepository(body.getUrl(), body.getName().toLowerCase());
-        return parser.getCommits(body.getName().toLowerCase());
+        return body.getName().toLowerCase();
     }
 
     @GetMapping("/api/repository/{name}/{commit}")

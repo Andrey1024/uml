@@ -42,10 +42,10 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     }
 
     ngOnChanges(): void {
-        this.data = this.layouts.find(layout => layout.name === this.layoutName).place(this.hierarchy);
+        this.data = this.layouts.find(layout => layout.name === this.layoutName).place(this.hierarchy, {});
     }
 
     ngAfterViewInit() {
-        // this.three.
+        this.three.resize()
     }
 }

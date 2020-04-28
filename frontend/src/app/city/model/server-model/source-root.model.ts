@@ -1,7 +1,6 @@
 import { Element } from "./element";
 
 export interface SourceRoot {
-    repoName: string;
-    commit: string;
+    sourceRoots: string[];
     data: Element[];
 }

@@ -3,24 +3,15 @@ package ru.avlasov.reverse.model;
 import java.util.List;
 
 public class Project {
-    private String sourceRoot;
-    private String commit;
+    private List<String> sourceRoots;
     private List<Element> data;
 
-    public String getSourceRoot() {
-        return sourceRoot;
+    public List<String> getSourceRoots() {
+        return sourceRoots;
     }
 
-    public void setSourceRoot(String sourceRoot) {
-        this.sourceRoot = sourceRoot;
-    }
-
-    public String getCommit() {
-        return commit;
-    }
-
-    public void setCommit(String commit) {
-        this.commit = commit;
+    public void setSourceRoots(List<String> sourceRoots) {
+        this.sourceRoots = sourceRoots;
     }
 
     public List<Element> getData() {
@@ -31,9 +22,8 @@ public class Project {
         this.data = data;
     }
 
-    public Project(String sourceRoot, String version, List<Element> data) {
-        this.sourceRoot = sourceRoot;
-        this.commit = version;
+    public Project(List<Element> data, List<String> sourceRoots) {
         this.data = data;
+        this.sourceRoots = sourceRoots;
     }
 }

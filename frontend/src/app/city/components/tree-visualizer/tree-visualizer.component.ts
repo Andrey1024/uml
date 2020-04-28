@@ -44,8 +44,6 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
 
     dataSource: MatTreeFlatDataSource<ItemNode, ItemFlatNode>;
 
-    selectedSet: Set<string>;
-
     /** The selection for checklist */
 
     constructor() {
@@ -54,27 +52,32 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
         this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
     }
 
-    private selectNodes(...names: string[]) {
-        names.forEach(name => this.selected.add(name));
+    private selectNodes(...nodes: ItemFlatNode[]) {
+        nodes.forEach(name => this.selected.add(name.item));
     }
 
 
-    private deselectNodes(...names: string[]) {
-        names.forEach(name => this.selected.delete(name));
+    private deselectNodes(...nodes: ItemFlatNode[]) {
+        nodes.forEach(name => this.selected.delete(name.item));
     }
 
-    private toggleSelection(...names: string[]) {
-        names.forEach(name => {
-            if (this.selected.has(name)) {
-                this.selected.delete(name);
+    private toggleSelection(...nodes: ItemFlatNode[]) {
+        nodes.forEach(name => {
+            if (this.selected.has(name.item)) {
+                this.selected.delete(name.item);
             } else {
-                this.selected.add(name);
+                this.selected.add(name.item);
             }
         });
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        this.dataSource.data = this.data;
+        if (changes.data) {
+            this.dataSource.data = this.data;
+        }
+        if (changes.selected) {
+
+        }
     }
 
     ngOnInit(): void {
@@ -124,12 +127,12 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
     }
 
     /** Toggle the to-do item selection. Select/deselect all the descendants node */
-    todoItemSelectionToggle(node: ItemFlatNode): void {
-        this.toggleSelection(node.item);
+    packageSelectionToggle(node: ItemFlatNode): void {
+        this.toggleSelection(node);
         const descendants = this.treeControl.getDescendants(node);
         this.selected.has(node.item)
-            ? this.selectNodes(...descendants.map(d => d.item))
-            : this.deselectNodes(...descendants.map(d => d.item));
+            ? this.selectNodes(...descendants)
+            : this.deselectNodes(...descendants);
 
         // Force update for the parent
         descendants.every(child =>
@@ -140,8 +143,8 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
     }
 
     /** Toggle a leaf to-do item selection. Check all the parents to see if they changed */
-    todoLeafItemSelectionToggle(node: ItemFlatNode): void {
-        this.toggleSelection(node.item);
+    classSelectionToggle(node: ItemFlatNode): void {
+        this.toggleSelection(node);
         this.checkAllParentsSelection(node);
         this.select.emit([...this.selected]);
     }
@@ -163,9 +166,9 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
             this.selected.has(child.item)
         );
         if (nodeSelected && !descAllSelected) {
-            this.deselectNodes(node.item);
+            this.deselectNodes(node);
         } else if (!nodeSelected && descAllSelected) {
-            this.selectNodes(node.item);
+            this.selectNodes(node);
         }
     }
 

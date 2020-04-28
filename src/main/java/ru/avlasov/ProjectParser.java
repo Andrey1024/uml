@@ -155,7 +155,7 @@ public class ProjectParser {
             }
         }
 
-        return new Project(repoName, commit, result);
+        return new Project(result, new ArrayList<>(sourceRoots.keySet()));
     }
 
 

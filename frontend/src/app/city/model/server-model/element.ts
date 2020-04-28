@@ -1,5 +1,4 @@
 import { ClassModel } from "./class.model";
-import { PackageModel } from "./package.model";
 import { InterfaceModel } from "./interface.model";
 
-export type Element = ClassModel | PackageModel | InterfaceModel;
+export type Element = ClassModel | InterfaceModel;

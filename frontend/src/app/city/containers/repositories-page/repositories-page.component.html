@@ -1,0 +1,11 @@
+<mat-card class="repositories-card">
+    <mat-card-title>Загруженные репозитории</mat-card-title>
+    <mat-card-content>
+        <mat-nav-list>
+            <a *ngFor="let repo of repositories$ | async" mat-list-item [routerLink]="repo">{{repo}}</a>
+        </mat-nav-list>
+    </mat-card-content>
+    <mat-card-actions>
+        <button mat-button (click)="createRepo()">ДОБАВИТЬ</button>
+    </mat-card-actions>
+</mat-card>

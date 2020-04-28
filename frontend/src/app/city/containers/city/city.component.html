@@ -1,9 +1,4 @@
 <div class="city" fxLayout="column">
-    <mat-toolbar fxFlex="none" color="primary" class="mat-elevation-z6">
-        <button mat-icon-button (click)="commits.toggle()">
-            <mat-icon>menu</mat-icon>
-        </button>
-    </mat-toolbar>
     <nav mat-tab-nav-bar backgroundColor="primary" class="mat-elevation-z4">
         <a mat-tab-link *ngFor="let layout of layoutNames"
            (click)="selectedLayout$.next(layout)"
@@ -11,30 +6,43 @@
     </nav>
     <mat-sidenav-container fxFlex="1 0 auto">
         <mat-sidenav #commits class="commits-sidenav">
-            <uml-add-commits [commits]="commits$ | async" (load)="loadCommitState($event)"></uml-add-commits>
+            <uml-add-commits [commits]="commits$ | async"
+                             [loaded]="loadedCommits$ | async"
+                             (load)="loadCommitState($event)"></uml-add-commits>
         </mat-sidenav>
         <mat-sidenav [opened]="true" position="end" mode="side" class="tree-sidenav">
-            <div fxLayout="column" fxLayoutAlign="flex-start stretch">
-<!--            <mat-form-field fxFlex="none">-->
-<!--                <mat-select [value]="selectedSource$ | async" (selectionChange)="selectSource($event.value)">-->
-<!--                    <mat-option *ngFor="let path of sourceRoots$ | async" [value]="path">{{path}}</mat-option>-->
-<!--                </mat-select>-->
-<!--                <mat-label>Корневая папка</mat-label>-->
-<!--            </mat-form-field>-->
-            <uml-tree-visualizer *ngIf="treeItems$ | async as tree"
-                                 [selected]="selectedNodes$ | async"
-                                 [data]="tree"></uml-tree-visualizer>
-            </div>
+            <mat-tab-group class="tree-tab-group">
+                <mat-tab label="Структура">
+                    <mat-form-field>
+                        <mat-label>Корневая папка</mat-label>
+                        <mat-select [value]="sourceRoot$ | async" (selectionChange)="selectSourceRoot($event.value)">
+                            <mat-option [value]="''">Не группировать</mat-option>
+                            <mat-option *ngFor="let root of sourceRoots$ | async" [value]="root">{{root}}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    <uml-tree-visualizer (select)="selectNodes($event)"
+                                         [selected]="selectedNodes$ | async"
+                                         [data]="treeItems$ | async"></uml-tree-visualizer>
+                </mat-tab>
+                <mat-tab label="Авторы">
+<!--                    <uml-authors-list [authors]="authors$ | async"-->
+<!--                                      [selected]="selectedAuthors$ | async"-->
+<!--                                      (select)="selectAuthors($event)"-->
+<!--                    ></uml-authors-list>-->
+                </mat-tab>
+            </mat-tab-group>
         </mat-sidenav>
         <mat-sidenav-content>
-            <uml-canvas-visualizer *ngIf="hierarchy$ | async as hierarchy"
-                                   [hierarchy]="hierarchy"
+            <uml-canvas-visualizer [hierarchy]="hierarchy$ | async"
                                    [selected]="selectedNodes$ | async"
                                    [layoutName]="selectedLayout$ | async"></uml-canvas-visualizer>
         </mat-sidenav-content>
 
     </mat-sidenav-container>
     <mat-toolbar color="primary" class="footer">
+        <button mat-icon-button (click)="commits.toggle()">
+            <mat-icon>add</mat-icon>
+        </button>
         <mat-chip-list [multiple]="false">
             <mat-chip color="accent"
                       *ngFor="let commit of loadedCommits$ | async"
