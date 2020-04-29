@@ -10,6 +10,7 @@ import { CommitsState, CommitsStateModel, Load } from "./commits.state";
 import { insertItem, patch } from "@ngxs/store/operators";
 import { keyBy, mapValues, set } from "lodash-es";
 import { Commit } from "../model/server-model/commit.model";
+import { DisplayOptions } from "../service/layout.service";
 
 export class LoadState {
     static readonly type = '[Repository] load commit state';
@@ -61,12 +62,20 @@ export class Focus {
 
 }
 
+export class AuthorView {
+    static readonly type = '[Repository] authors view';
+
+    constructor(public showAuthors: boolean) {
+    }
+}
+
 export interface RepositoryStateModel {
     data: { [path: string]: { [commit: string]: Element } };
     loadedCommits: string[];
     sourceRoot: string;
     selectedNodes: string[];
     selectedAuthors: string[];
+    showAuthors: boolean;
     path: string;
     commit: string;
     highLight: string;
@@ -112,12 +121,18 @@ function createTree(hierarchy: any, pack: string = null): ItemNode[] {
         selectedNodes: [],
         selectedAuthors: [],
         commit: null,
-        highLight: null
+        highLight: null,
+        showAuthors: false
     },
     children: [CommitsState]
 })
 @Injectable()
 export class RepositoryState {
+    @Selector([RepositoryState])
+    static getLayoutOptions(state: RepositoryStateModel): DisplayOptions {
+        return { showAuthors: state.showAuthors };
+    }
+
     @Selector([RepositoryState])
     static getElements(state: RepositoryStateModel) {
         return state.data;
@@ -166,11 +181,14 @@ export class RepositoryState {
         do {
             commitsBefore.push(commits[i])
         } while (commits[i++].name !== commit);
-        return Object.keys(data).filter(key => !!data[key][commit]).map(path => ({
-            ...data[path][commit],
-            lifeSpan: commitsBefore.filter(c => !!data[path][c]).length / commitsBefore.length,
-            authors: mapValues(data[path][commit], (val, key) => authors.includes(key) ? val : 0)
-        }));
+        return Object.keys(data).filter(key => !!data[key][commit]).map(path => {
+            const lifeSpan = commitsBefore.filter(c => !!data[path][c.name]).length / commitsBefore.length;
+            return ({
+                ...data[path][commit],
+                lifeSpan,
+                authors: mapValues(data[path][commit], (val, key) => authors.includes(key) ? val : 0)
+            })
+        });
     }
 
     @Selector([RepositoryState.getCommitElements])
@@ -226,10 +244,15 @@ export class RepositoryState {
         return this.http.get<SourceRoot>(`/api/repository/${name}/${commit}`).pipe(
             tap(result => {
                 const { data } = ctx.getState();
-                const newData = result.data.reduce((acc, cur) => {
-                    acc[cur.fullPath] = { ...data[cur.fullPath], [commit]: cur };
-                    return acc;
-                }, {})
+                const resultMap = keyBy(result.data, 'fullPath');
+                const allPaths = new Set([...Object.keys(data), ...Object.keys(resultMap)]);
+                let newData = {};
+                for (const path of allPaths) {
+                    newData[path] = data[path] ? { ...data[path] } : {};
+                    if (resultMap[path]) {
+                        newData[path][commit] = resultMap[path];
+                    }
+                }
                 ctx.setState(patch({
                     data: newData,
                     loadedCommits: insertItem(commit)
@@ -251,6 +274,12 @@ export class RepositoryState {
     @Action(SelectSourceRoot)
     selectSourceRoot(ctx: StateContext<RepositoryStateModel>, { sourceRoot }: SelectSourceRoot) {
         ctx.patchState({ sourceRoot });
+    }
+
+
+    @Action(AuthorView)
+    authorsView(ctx: StateContext<RepositoryStateModel>, { showAuthors }: AuthorView) {
+        ctx.patchState({ showAuthors });
     }
 
     @Action(SelectAuthors)

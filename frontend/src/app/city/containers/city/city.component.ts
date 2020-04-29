@@ -14,7 +14,7 @@ import {
 } from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
 import { Hierarchy } from "../../model/hierarchy.model";
-import { LayoutService } from "../../service/layout.service";
+import { DisplayOptions, LayoutService } from "../../service/layout.service";
 
 @Component({
     selector: 'uml-city',
@@ -49,14 +49,17 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getSelectedCommit)
     selectedCommit$: Observable<string>;
 
-    // @Select(RepositoryState.getSelectedAuthors)
-    // selectedAuthors$: Observable<Set<string>>;
+    @Select(RepositoryState.getSelectedAuthors)
+    selectedAuthors$: Observable<string[]>;
 
     @Select(RepositoryState.getSourceRoots)
     sourceRoots$: Observable<string[]>;
 
     @Select(RepositoryState.getSourceRoot)
     sourceRoot$: Observable<string>
+
+    @Select(RepositoryState.getLayoutOptions)
+    options$: Observable<DisplayOptions>;
 
     layoutNames = this.layouts.map(layout => layout.name);
     selectedLayout$ = new BehaviorSubject<string>(this.layoutNames[0]);
@@ -92,5 +95,9 @@ export class CityComponent implements OnInit {
 
     selectNodes(nodes: string[]) {
         this.store.dispatch(new SelectNodes(nodes));
+    }
+
+    selectAuthorsView(showAuthors: boolean) {
+
     }
 }

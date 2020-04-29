@@ -8,7 +8,7 @@ import {
     OnInit,
     ViewChild
 } from '@angular/core';
-import { LayoutService } from '../../service/layout.service';
+import { DisplayOptions, LayoutService } from '../../service/layout.service';
 import { Observable } from 'rxjs/internal/Observable';
 import { filter, map } from 'rxjs/operators';
 import { BehaviorSubject, combineLatest } from 'rxjs';
@@ -31,6 +31,7 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     @Input() hierarchy: Hierarchy;
     @Input() selected: Set<string>;
     @Input() layoutName: string;
+    @Input() displayOptions: DisplayOptions;
 
     data: THREE.Object3D[];
 
@@ -42,7 +43,8 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     }
 
     ngOnChanges(): void {
-        this.data = this.layouts.find(layout => layout.name === this.layoutName).place(this.hierarchy, {});
+        this.data = this.layouts.find(layout => layout.name === this.layoutName)
+            .place(this.hierarchy, this.displayOptions);
     }
 
     ngAfterViewInit() {

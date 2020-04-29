@@ -6,5 +6,10 @@
   .mat-toolbar {
     overflow: visible;
     z-index: 10;
+
+    .home-link {
+      text-decoration: none;
+      color: white;
+    }
   }
 }

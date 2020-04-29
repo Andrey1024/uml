@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import { Hierarchy } from "../model/hierarchy.model";
 
+export interface DisplayOptions {
+    showAuthors: boolean;
+}
+
 export abstract class LayoutService {
     name: string;
-    place: (hierarchy: Hierarchy, options: any) => THREE.Object3D[];
+    place: (hierarchy: Hierarchy, options: DisplayOptions) => THREE.Object3D[];
 }

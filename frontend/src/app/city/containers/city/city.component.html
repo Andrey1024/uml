@@ -11,7 +11,7 @@
                              (load)="loadCommitState($event)"></uml-add-commits>
         </mat-sidenav>
         <mat-sidenav [opened]="true" position="end" mode="side" class="tree-sidenav">
-            <mat-tab-group class="tree-tab-group">
+            <mat-tab-group class="tree-tab-group" (selectedIndexChange)="selectAuthorsView($event == 1)">
                 <mat-tab label="Структура">
                     <mat-form-field>
                         <mat-label>Корневая папка</mat-label>
@@ -25,15 +25,16 @@
                                          [data]="treeItems$ | async"></uml-tree-visualizer>
                 </mat-tab>
                 <mat-tab label="Авторы">
-<!--                    <uml-authors-list [authors]="authors$ | async"-->
-<!--                                      [selected]="selectedAuthors$ | async"-->
-<!--                                      (select)="selectAuthors($event)"-->
-<!--                    ></uml-authors-list>-->
+                    <uml-authors-list [authors]="authors$ | async"
+                                      [selected]="selectedAuthors$ | async"
+                                      (select)="selectAuthors($event)"
+                    ></uml-authors-list>
                 </mat-tab>
             </mat-tab-group>
         </mat-sidenav>
         <mat-sidenav-content>
             <uml-canvas-visualizer [hierarchy]="hierarchy$ | async"
+                                   [displayOptions]="options$ | async"
                                    [selected]="selectedNodes$ | async"
                                    [layoutName]="selectedLayout$ | async"></uml-canvas-visualizer>
         </mat-sidenav-content>

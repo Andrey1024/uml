@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as THREE from 'three';
-import { LayoutService } from './layout.service';
+import { DisplayOptions, LayoutService } from './layout.service';
 import { map } from 'lodash-es';
 import { Overlay } from '@angular/cdk/overlay';
 import { FontService } from './font.service';
@@ -49,16 +49,16 @@ export class CityService implements LayoutService {
         return this.authorColors.get(author);
     }
 
-    place(hierarchy: Hierarchy, options): THREE.Object3D[] {
-        const res = this.process(hierarchy);
+    place(hierarchy: Hierarchy, options: DisplayOptions): THREE.Object3D[] {
+        const res = this.process(hierarchy, options);
         res.updateMatrixWorld();
         return [res];
     }
 
-    private process(hierarchy: any, name: string = null): THREE.Object3D {
+    private process(hierarchy: any, options: DisplayOptions, name: string = null): THREE.Object3D {
         return hierarchy.type
-            ? this.createElementMesh(hierarchy)
-            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, name ? `${name}.${k}` : k)), name);
+            ? options.showAuthors ? this.createAuthorMesh(hierarchy) : this.createElementMesh(hierarchy)
+            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, options, name ? `${name}.${k}` : k)), name);
     }
 
     private getElementProps(el: Element): { size: number, height: number } {
