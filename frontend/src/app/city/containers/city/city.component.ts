@@ -1,10 +1,11 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { Select, Store } from "@ngxs/store";
 import { BehaviorSubject, Observable } from "rxjs";
-import { Commit } from "../../model/server-model/commit.model";
+import { Author, Commit } from "../../model/server-model/commit.model";
 import { ActivatedRoute } from "@angular/router";
 import { CommitsState, Load } from "../../state/commits.state";
 import {
+    AuthorView,
     LoadState,
     RepositoryState,
     SelectAuthors,
@@ -26,7 +27,7 @@ export class CityComponent implements OnInit {
     name$: Observable<string>
 
     @Select(RepositoryState.getAuthorsWithCount)
-    authors$: Observable<{ author: string, count: number }[]>;
+    authors$: Observable<{ author: Author, count: number }[]>;
 
     @Select(CommitsState.getAllCommitsDesc)
     commits$: Observable<Commit[]>;
@@ -98,6 +99,6 @@ export class CityComponent implements OnInit {
     }
 
     selectAuthorsView(showAuthors: boolean) {
-
+        this.store.dispatch(new AuthorView(showAuthors));
     }
 }

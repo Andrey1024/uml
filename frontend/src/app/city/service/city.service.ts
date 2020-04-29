@@ -81,6 +81,7 @@ export class CityService implements LayoutService {
         const result = new THREE.Group();
         const authors = Object.keys(node.authors)
             .map(key => ({ author: key, count: node.authors[key] }))
+            .filter(author => author.count > 0)
             .sort((a, b) => b.count - a.count).slice(0, 10);
         let offset = 0;
         for (let i = 0; i < authors.length; i++) {

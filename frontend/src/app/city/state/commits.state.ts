@@ -5,6 +5,7 @@ import { finalize, tap } from "rxjs/operators";
 import { patch } from "@ngxs/store/operators";
 import { Injectable } from "@angular/core";
 import { LoadState } from "./repository.state";
+import { keyBy } from "lodash-es";
 
 export class Load {
     static readonly type = '[Repository] load';
@@ -17,6 +18,7 @@ export class Load {
 export interface CommitsStateModel {
     repositoryName: string;
     byId: { [name: string]: Commit };
+    authors: { [email: string]: Author }
     ids: string[];
     loaded: boolean;
 }
@@ -26,6 +28,7 @@ export interface CommitsStateModel {
     defaults: {
         repositoryName: null,
         byId: {},
+        authors: {},
         ids: [],
         loaded: false
     }
@@ -47,11 +50,16 @@ export class CommitsState {
         return state.ids.map(id => state.byId[id]).sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
     }
 
-
-    @Selector([CommitsState.getAllCommits])
-    static getAuthorList(commits: Commit[]): Author[] {
-        return [...new Set(commits.map(commit => commit.author))].slice(0, 50);
+    @Selector([CommitsState])
+    static getAuthorsByEmail(state: CommitsStateModel) {
+        return state.authors;
     }
+
+
+    // @Selector([CommitsState.getAllCommits])
+    // static getAuthorList(commits: Commit[]): Author[] {
+    //     // return [...new Set(commits.map(commit => commit.author))];
+    // }
 
     @Selector([CommitsState])
     static isLoaded(state: CommitsStateModel) {
@@ -65,10 +73,15 @@ export class CommitsState {
     openRepository(ctx: StateContext<CommitsStateModel>, { name }: Load) {
         ctx.patchState({ loaded: false, repositoryName: name, byId: {}, ids: [] });
         return this.http.get<Commit[]>(`/api/repository/${name}`).pipe(
-            tap(commits => ctx.setState(patch({
-                byId: commits.reduce((res, com) => ({ ...res, [com.name]: com }), {}),
-                ids: commits.map(commit => commit.name)
-            }))),
+            tap(commits => {
+                const authorsMap: { [email: string]: Author } = {};
+                commits.forEach(commit => authorsMap[commit.author.email] = commit.author);
+                ctx.setState(patch({
+                    byId: keyBy(commits, 'name'),
+                    authors: authorsMap,
+                    ids: commits.map(commit => commit.name)
+                }))
+            }),
             finalize(() => ctx.patchState({ loaded: true })),
         );
     }

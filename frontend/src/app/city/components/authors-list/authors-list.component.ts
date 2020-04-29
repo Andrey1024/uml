@@ -9,7 +9,7 @@ import { MatListOption } from "@angular/material/list";
     styleUrls: ['./authors-list.component.scss']
 })
 export class AuthorsListComponent implements OnInit {
-    @Input() authors: { author: string, count: number }[];
+    @Input() authors: { author: Author, count: number }[];
     @Input() selected: string[];
     @Output() select = new EventEmitter<string[]>();
 

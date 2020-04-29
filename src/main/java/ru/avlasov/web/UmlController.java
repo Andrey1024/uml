@@ -38,8 +38,8 @@ public class UmlController {
         return parser.parseCommit(name.toLowerCase(), commit);
     }
 
-    @RequestMapping({"/{name}"})
-    public String index(@PathVariable String name) {
-        return "forward:/static/index.html";
-    }
+//    @RequestMapping({"/{name}"})
+//    public String index(@PathVariable String name) {
+//        return "forward:/static/index.html";
+//    }
 }

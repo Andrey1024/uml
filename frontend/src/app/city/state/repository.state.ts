@@ -9,7 +9,7 @@ import { Element } from "../model/server-model/element";
 import { CommitsState, CommitsStateModel, Load } from "./commits.state";
 import { insertItem, patch } from "@ngxs/store/operators";
 import { keyBy, mapValues, set } from "lodash-es";
-import { Commit } from "../model/server-model/commit.model";
+import { Author, Commit } from "../model/server-model/commit.model";
 import { DisplayOptions } from "../service/layout.service";
 
 export class LoadState {
@@ -174,7 +174,7 @@ export class RepositoryState {
     }
 
     @Selector([RepositoryState.getElements, RepositoryState.getSelectedCommit, RepositoryState.getLoadedCommits, RepositoryState.getSelectedAuthors])
-    static getCommitElements(data, commit, commits, authors: string[]): Element[] {
+    static getCommitElements(data, commit, commits, authorEmails: string[]): Element[] {
         if (commit == null) return [];
         const commitsBefore = [];
         let i = 0;
@@ -183,10 +183,11 @@ export class RepositoryState {
         } while (commits[i++].name !== commit);
         return Object.keys(data).filter(key => !!data[key][commit]).map(path => {
             const lifeSpan = commitsBefore.filter(c => !!data[path][c.name]).length / commitsBefore.length;
+            const authors = mapValues(data[path][commit].authors, (val, key) => authorEmails.includes(key) ? val : 0);
             return ({
                 ...data[path][commit],
                 lifeSpan,
-                authors: mapValues(data[path][commit], (val, key) => authors.includes(key) ? val : 0)
+                authors
             })
         });
     }
@@ -206,16 +207,16 @@ export class RepositoryState {
     }
 
 
-    @Selector([RepositoryState.getSelectedCommit, CommitsState.getAllCommits])
-    static getAuthorsWithCount(commit: string, commits: Commit[]): { author: string, count: number }[] {
+    @Selector([RepositoryState.getSelectedCommit, CommitsState.getAllCommits, CommitsState.getAuthorsByEmail])
+    static getAuthorsWithCount(commit: string, commits: Commit[], authorsByEmail): { author: Author, count: number }[] {
         if (commit === null) return [];
         const authors = new Map<string, number>();
         let i = 0
         do {
-            const author = commits[i].author.name;
+            const author = commits[i].author.email;
             authors.set(author, authors.has(author) ? authors.get(author) + 1 : 1);
         } while (commits[i++].name !== commit);
-        return [...authors.keys()].map(author => ({ author, count: authors.get(author) }))
+        return [...authors.keys()].map(author => ({ author: authorsByEmail[author], count: authors.get(author) }))
             .sort((a, b) => b.count - a.count);
     }
 

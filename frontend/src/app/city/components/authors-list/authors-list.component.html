@@ -1,8 +1,9 @@
 <mat-selection-list (selectionChange)="onSelect($event.source.selectedOptions)">
     <mat-list-option *ngFor="let author of authors"
-                     [value]="author.author"
-                     [selected]="selected.includes(author.author)">
-        <h3 matLine>{{author.author}}</h3>
+                     [value]="author.author.email"
+                     [selected]="selected.includes(author.author.email)">
+        <h3 matLine>{{author.author.name}}</h3>
+        <div matLine>Email: {{author.author.email}}</div>
         <div matLine>Commits: {{author.count}}</div>
     </mat-list-option>
 </mat-selection-list>
