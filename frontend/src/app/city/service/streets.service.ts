@@ -1,9 +1,12 @@
 import { Injectable } from '@angular/core';
-import { LayoutService } from './layout.service';
+import { DisplayOptions, LayoutService } from './layout.service';
 import * as THREE from 'three';
 import { Hierarchy } from "../model/hierarchy.model";
 import { first, map } from "lodash-es";
 import { Element } from "../model/server-model/element";
+import { NodeModel } from "../model/server-model/node.model";
+import { Store } from "@ngxs/store";
+import { CommitsState } from "../state/commits.state";
 
 interface UserData {
     width: number;
@@ -20,6 +23,10 @@ export class StreetsService implements LayoutService {
 
     readonly padding = 20;
 
+    authorColors = new Map<string, THREE.Color>();
+
+    constructor(private store: Store) {
+    }
 
     private static closeValue(value: number, ...steps: number[]): number {
         let i = 0;
@@ -33,31 +40,90 @@ export class StreetsService implements LayoutService {
         return steps[i];
     }
 
-    place(hierarchy: Hierarchy, options: any): THREE.Object3D[] {
-        const res = this.process(hierarchy);
+
+    private getAuthorColor(author: string): THREE.Color {
+        const authorsHsl = this.store.selectSnapshot(CommitsState.getAuthorsHSL);
+        if (!this.authorColors.has(author)) {
+            this.authorColors.set(author, new THREE.Color(`hsl(${authorsHsl[author]}, 100%, 50%)`));
+        }
+        return this.authorColors.get(author);
+    }
+
+    place(hierarchy: Hierarchy, options: DisplayOptions): THREE.Object3D[] {
+        const res = this.process(hierarchy, options);
         res.updateMatrixWorld();
         return [res];
     }
 
-    private process(hierarchy: any, name: string = null, depth = 1): THREE.Object3D {
+    private process(hierarchy: any, options: DisplayOptions, name: string = null, depth = 1): THREE.Object3D {
         return hierarchy.type
-            ? this.createElementMesh(hierarchy)
-            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, name ? `${name}.${k}` : k, depth + 1)), name, depth);
+            ? options.showAuthors ? this.createAuthorMesh(hierarchy) : this.createElementMesh(hierarchy)
+            : this.createPackageMesh(map(hierarchy, (v, k) =>
+                this.process(v, options, name ? `${name}.${k}` : k, depth + 1)), name, depth);
     }
 
-    private getElementProps(el: Element): { width: number, height: number } {
+    private getElementProps(el: Element): { size: number, height: number } {
         switch (el.type) {
             case "CLASS":
             case "INTERFACE":
                 return {
-                    width: StreetsService.closeValue(el.attributesCount, 10, 20, 30, 40, 50) * 2,
+                    size: StreetsService.closeValue(el.attributesCount, 10, 20, 30, 40, 50) * 2,
                     height: StreetsService.closeValue(el.methodsCount, 10, 20, 30, 40, 50) * 3
                 };
             default:
                 return {
-                    width: 10, height: 10
+                    size: 10, height: 10
                 }
         }
+    }
+
+    private createAuthorMesh(node: NodeModel): THREE.Object3D {
+        const props = this.getElementProps(node as Element);
+        const result = new THREE.Group();
+        const authors = Object.keys(node.authors)
+            .map(key => ({ author: key, count: node.authors[key] }))
+            .filter(author => author.count > 0)
+            .sort((a, b) => b.count - a.count).slice(0, 10);
+        let offset = 0;
+        for (let i = 0; i < authors.length; i++) {
+            const color = this.getAuthorColor(authors[i].author);
+            const material = new THREE.MeshPhongMaterial({
+                color, side: THREE.DoubleSide
+            });
+            let geometry: THREE.Geometry;
+            const height = StreetsService.closeValue(authors[i].count, 1, 10, 20, 30, 40);
+            switch (node.type) {
+                default:
+                case 'CLASS':
+                    geometry = new THREE.BoxGeometry(props.size, height, props.size)
+                        .translate(0, height / 2 + offset, 0);
+                    break;
+                case 'INTERFACE':
+                    const rad = props.size / 2;
+                    geometry = new THREE.CylinderGeometry(rad, rad, height, 32, 32)
+                        .translate(0, height / 2 + offset, 0);
+                    break;
+            }
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.matrixAutoUpdate = false;
+            mesh.matrixWorldNeedsUpdate = true;
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
+            result.add(mesh);
+            offset += height;
+        }
+        result.name = node.fullPath;
+        result.matrixAutoUpdate = false;
+        result.userData = <UserData> {
+            width: props.size + this.padding * 2,
+            length: props.size + this.padding * 2,
+            lifeSpan: node.lifeSpan,
+            name: node.fullPath,
+            height: offset,
+            data: node
+        };
+        return result;
+
     }
 
     private createElementMesh(node: Element): THREE.Object3D {
@@ -70,11 +136,11 @@ export class StreetsService implements LayoutService {
         switch (node.type) {
             default:
             case 'CLASS':
-                geometry = new THREE.BoxGeometry(props.width, props.height, props.width)
+                geometry = new THREE.BoxGeometry(props.size, props.height, props.size)
                     .translate(0, node.lifeSpan * 50, 0);
                 break;
             case 'INTERFACE':
-                const rad = props.width / 2;
+                const rad = props.size / 2;
                 geometry = new THREE.CylinderGeometry(rad, rad, props.height, 32, 32)
                     .translate(0, node.lifeSpan * 50, 0);
                 break;
@@ -83,8 +149,8 @@ export class StreetsService implements LayoutService {
         mesh.name = node.fullPath;
         mesh.matrixAutoUpdate = false;
         mesh.userData = <UserData> {
-            width: props.width,
-            length: props.width,
+            width: props.size,
+            length: props.size,
             lifeSpan: node.lifeSpan,
             name: node.fullPath,
             height: props.height,

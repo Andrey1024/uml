@@ -2,6 +2,7 @@
     <mat-list-option *ngFor="let author of authors"
                      [value]="author.author.email"
                      [selected]="selected.includes(author.author.email)">
+        <div matListAvatar [style.background]="getHslString(author.author.email)"></div>
         <h3 matLine>{{author.author.name}}</h3>
         <div matLine>Email: {{author.author.email}}</div>
         <div matLine>Commits: {{author.count}}</div>

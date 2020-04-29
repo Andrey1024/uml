@@ -62,6 +62,9 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getLayoutOptions)
     options$: Observable<DisplayOptions>;
 
+    @Select(CommitsState.getAuthorsHSL)
+    authorColors$: Observable<{ [email: string]: number }>
+
     layoutNames = this.layouts.map(layout => layout.name);
     selectedLayout$ = new BehaviorSubject<string>(this.layoutNames[0]);
 

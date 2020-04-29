@@ -51,10 +51,20 @@ export class CommitsState {
     }
 
     @Selector([CommitsState])
-    static getAuthorsByEmail(state: CommitsStateModel) {
+    static getAuthorsByEmail(state: CommitsStateModel): { [email: string]: Author } {
         return state.authors;
     }
 
+    @Selector([CommitsState.getAuthorsByEmail])
+    static getAuthorsHSL(authors: { [email: string]: Author }): { [email: string]: number } {
+        const result = {};
+        let i = 70;
+        for (const email of Object.keys(authors)) {
+            result[email] = i;
+            i += 70;
+        }
+        return result;
+    }
 
     // @Selector([CommitsState.getAllCommits])
     // static getAuthorList(commits: Commit[]): Author[] {

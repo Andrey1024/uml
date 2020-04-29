@@ -8,6 +8,8 @@ import { Hierarchy } from "../model/hierarchy.model";
 import { Element } from "../model/server-model/element";
 import { Grid } from "../model/grid.model";
 import { NodeModel } from "../model/server-model/node.model";
+import { Store } from "@ngxs/store";
+import { CommitsState } from "../state/commits.state";
 
 interface UserData {
     width: number;
@@ -25,11 +27,8 @@ export class CityService implements LayoutService {
     readonly padding = 10;
 
     authorColors = new Map<string, THREE.Color>();
-    colorIndex = 0;
 
-    font = this.fontService.font;
-
-    constructor(private overlay: Overlay, private fontService: FontService) {
+    constructor(private store: Store) {
     }
 
     private static closeValue(value: number, ...steps: number[]): number {
@@ -41,10 +40,10 @@ export class CityService implements LayoutService {
         return steps[i];
     }
 
-    getAuthorColor(author: string): THREE.Color {
+    private getAuthorColor(author: string): THREE.Color {
+        const authorsHsl = this.store.selectSnapshot(CommitsState.getAuthorsHSL);
         if (!this.authorColors.has(author)) {
-            this.authorColors.set(author, new THREE.Color(`hsl(${this.colorIndex}, 100%, 50%)`));
-            this.colorIndex += 70;
+            this.authorColors.set(author, new THREE.Color(`hsl(${authorsHsl[author]}, 100%, 50%)`));
         }
         return this.authorColors.get(author);
     }
@@ -54,6 +53,7 @@ export class CityService implements LayoutService {
         res.updateMatrixWorld();
         return [res];
     }
+
 
     private process(hierarchy: any, options: DisplayOptions, name: string = null): THREE.Object3D {
         return hierarchy.type
@@ -108,6 +108,14 @@ export class CityService implements LayoutService {
             mesh.matrixWorldNeedsUpdate = true;
             mesh.receiveShadow = true;
             mesh.castShadow = true;
+            mesh.userData = <UserData> {
+                width: props.size + this.padding * 2,
+                length: props.size + this.padding * 2,
+                lifeSpan: node.lifeSpan,
+                name: node.fullPath,
+                height: offset,
+                data: node
+            };
             result.add(mesh);
             offset += height;
         }

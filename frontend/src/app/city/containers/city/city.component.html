@@ -27,6 +27,7 @@
                 <mat-tab label="Авторы">
                     <uml-authors-list [authors]="authors$ | async"
                                       [selected]="selectedAuthors$ | async"
+                                      [authorColors]="authorColors$ | async"
                                       (select)="selectAuthors($event)"
                     ></uml-authors-list>
                 </mat-tab>
@@ -41,6 +42,7 @@
 
     </mat-sidenav-container>
     <mat-toolbar color="primary" class="footer">
+        <span>Commits</span>
         <button mat-icon-button (click)="commits.toggle()">
             <mat-icon>add</mat-icon>
         </button>
