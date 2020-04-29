@@ -1,6 +1,7 @@
 package ru.avlasov.web;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import ru.avlasov.ProjectParser;
 import ru.avlasov.reverse.model.Project;
@@ -16,6 +17,7 @@ public class UmlController {
     public UmlController(ProjectParser parser) {
         this.parser = parser;
     }
+
 
     @GetMapping("/api/repository")
     public List<String> getRepositories() {
@@ -37,9 +39,4 @@ public class UmlController {
     public Project getVersion(@PathVariable String commit, @PathVariable String name) throws IOException {
         return parser.parseCommit(name.toLowerCase(), commit);
     }
-
-//    @RequestMapping({"/{name}"})
-//    public String index(@PathVariable String name) {
-//        return "forward:/static/index.html";
-//    }
 }

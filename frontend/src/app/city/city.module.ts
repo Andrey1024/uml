@@ -59,7 +59,7 @@ import { MatDialogModule } from "@angular/material/dialog";
         MatListModule,
         RouterModule.forChild([
             { path: "", component: RepositoriesPageComponent },
-            { path: ":name", component: CityComponent }]),
+            { path: "repository/:name", component: CityComponent }]),
         FlexLayoutModule,
         MatDialogModule
     ],
