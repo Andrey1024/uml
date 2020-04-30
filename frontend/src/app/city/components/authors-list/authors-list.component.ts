@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Author } from "../../model/server-model/commit.model";
 import { SelectionModel } from "@angular/cdk/collections";
 import { MatListOption } from "@angular/material/list";
@@ -6,7 +6,8 @@ import { MatListOption } from "@angular/material/list";
 @Component({
     selector: 'uml-authors-list',
     templateUrl: './authors-list.component.html',
-    styleUrls: ['./authors-list.component.scss']
+    styleUrls: ['./authors-list.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AuthorsListComponent implements OnInit {
     @Input() authors: { author: Author, count: number }[];

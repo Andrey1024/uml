@@ -84,7 +84,7 @@ export class StreetsService implements LayoutService {
             .map(key => ({ author: key, count: node.authors[key] }))
             .filter(author => author.count > 0)
             .sort((a, b) => b.count - a.count).slice(0, 10);
-        let offset = 0;
+        let offset = node.lifeSpan * 50;
         for (let i = 0; i < authors.length; i++) {
             const color = this.getAuthorColor(authors[i].author);
             const material = new THREE.MeshPhongMaterial({
@@ -115,8 +115,8 @@ export class StreetsService implements LayoutService {
         result.name = node.fullPath;
         result.matrixAutoUpdate = false;
         result.userData = <UserData> {
-            width: props.size + this.padding * 2,
-            length: props.size + this.padding * 2,
+            width: props.size,
+            length: props.size,
             lifeSpan: node.lifeSpan,
             name: node.fullPath,
             height: offset,
@@ -214,13 +214,13 @@ export class StreetsService implements LayoutService {
 
             if (leftOffset <= rightOffset) {
                 children[i].applyMatrix(new THREE.Matrix4()
-                    .makeTranslation((childData.length + width) / 2, childData.height / 2, leftOffset + childData.width / 2));
+                    .makeTranslation((childData.length + width) / 2, 0, leftOffset + childData.width / 2));
                 children[i].applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 2));
                 leftOffset += childData.width + this.padding;
                 left = Math.max(left, childData.length);
             } else {
                 children[i].applyMatrix(new THREE.Matrix4()
-                    .makeTranslation((childData.length + width) / 2, childData.height / 2, -rightOffset - childData.width / 2));
+                    .makeTranslation((childData.length + width) / 2, 0, -rightOffset - childData.width / 2));
                 children[i].applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI / 2));
                 rightOffset += childData.width + this.padding;
                 right = Math.max(right, childData.length);

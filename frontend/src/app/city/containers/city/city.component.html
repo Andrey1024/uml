@@ -5,33 +5,43 @@
            [active]="(selectedLayout$ | async) === layout">{{ layout }}</a>
     </nav>
     <mat-sidenav-container fxFlex="1 0 auto">
-        <mat-sidenav #commits class="commits-sidenav">
+        <mat-sidenav #commits class="commits-sidenav" [fixedInViewport]="true" [fixedTopGap]="64">
             <uml-add-commits [commits]="commits$ | async"
                              [loaded]="loadedCommits$ | async"
+                             [loading]="loadingCommits$ | async"
                              (load)="loadCommitState($event)"></uml-add-commits>
         </mat-sidenav>
-        <mat-sidenav [opened]="true" position="end" mode="side" class="tree-sidenav">
-            <mat-tab-group class="tree-tab-group" (selectedIndexChange)="selectAuthorsView($event == 1)">
-                <mat-tab label="Структура">
-                    <mat-form-field>
-                        <mat-label>Корневая папка</mat-label>
-                        <mat-select [value]="sourceRoot$ | async" (selectionChange)="selectSourceRoot($event.value)">
-                            <mat-option [value]="''">Не группировать</mat-option>
-                            <mat-option *ngFor="let root of sourceRoots$ | async" [value]="root">{{root}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                    <uml-tree-visualizer (select)="selectNodes($event)"
-                                         [selected]="selectedNodes$ | async"
-                                         [data]="treeItems$ | async"></uml-tree-visualizer>
-                </mat-tab>
-                <mat-tab label="Авторы">
-                    <uml-authors-list [authors]="authors$ | async"
-                                      [selected]="selectedAuthors$ | async"
-                                      [authorColors]="authorColors$ | async"
-                                      (select)="selectAuthors($event)"
-                    ></uml-authors-list>
-                </mat-tab>
-            </mat-tab-group>
+        <mat-sidenav [opened]="true" [disableClose]="true" position="end" mode="side" class="tree-sidenav">
+            <div class="tree-sidenav-content">
+                <mat-form-field>
+                    <mat-label>Корневая папка</mat-label>
+                    <mat-select [value]="sourceRoot$ | async" (selectionChange)="selectSourceRoot($event.value)">
+                        <mat-option [value]="''">Не группировать</mat-option>
+                        <mat-option *ngFor="let root of sourceRoots$ | async" [value]="root">{{root}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+                <!--                <mat-divider></mat-divider>-->
+                <mat-tab-group class="tree-tab-group" mat-align-tabs="center"
+                               (selectedIndexChange)="selectAuthorsView($event == 1)">
+                    <mat-tab label="Структура">
+                        <mat-form-field>
+                            <mat-label>Поиск</mat-label>
+                            <input matInput [value]="search$ | async" (input)="updateSearch($event.target.value)">
+                        </mat-form-field>
+                        <uml-tree-visualizer (select)="selectNodes($event)"
+                                             (focus)="focusNode($event)"
+                                             [searchString]="search$ | async"
+                                             [selected]="selectedNodes$ | async"
+                                             [data]="treeItems$ | async"></uml-tree-visualizer>
+                    </mat-tab>
+                    <mat-tab label="Авторы">
+                        <uml-authors-list [authors]="authors$ | async"
+                                          [selected]="selectedAuthors$ | async"
+                                          [authorColors]="authorColors$ | async"
+                                          (select)="selectAuthors($event)"></uml-authors-list>
+                    </mat-tab>
+                </mat-tab-group>
+            </div>
         </mat-sidenav>
         <mat-sidenav-content>
             <uml-canvas-visualizer [hierarchy]="hierarchy$ | async"
@@ -41,16 +51,20 @@
         </mat-sidenav-content>
 
     </mat-sidenav-container>
-    <mat-toolbar color="primary" class="footer">
-        <span>Commits</span>
-        <button mat-icon-button (click)="commits.toggle()">
+    <mat-toolbar color="primary" class="footer" fxLayout="row" fxLayoutGap="10px">
+        <button mat-icon-button (click)="commits.toggle()" fxFlex="none">
             <mat-icon>add</mat-icon>
         </button>
-        <mat-chip-list [multiple]="false">
+        <mat-chip-list [multiple]="false" fxFlex="1 0 auto">
             <mat-chip color="accent"
                       *ngFor="let commit of loadedCommits$ | async"
                       (click)="selectCommit(commit)"
                       [selected]="(selectedCommit$ | async) === commit.name"
+                      [selectable]="false">{{ commit.date | date : "dd-MM-yyyy" }}</mat-chip>
+        </mat-chip-list>
+        <mat-chip-list class="loading-chips">
+            <mat-chip color="accent"
+                      *ngFor="let commit of loadingCommits$ | async"
                       [selectable]="false">{{ commit.date | date : "dd-MM-yyyy" }}</mat-chip>
         </mat-chip-list>
     </mat-toolbar>

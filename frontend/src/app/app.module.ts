@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { APP_INITIALIZER, LOCALE_ID, NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { HttpClientModule } from '@angular/common/http';
@@ -15,6 +15,10 @@ import { environment } from "../environments/environment";
 import { RouterModule } from "@angular/router";
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { FlexLayoutModule } from "@angular/flex-layout";
+import { registerLocaleData } from "@angular/common";
+import localeRu from "@angular/common/locales/ru";
+
+registerLocaleData(localeRu);
 
 @NgModule({
     imports: [
@@ -43,6 +47,7 @@ import { FlexLayoutModule } from "@angular/flex-layout";
         },
         { provide: LayoutService, useClass: CityService, multi: true },
         { provide: LayoutService, useClass: StreetsService, multi: true },
+        { provide: LOCALE_ID, useValue: 'ru-RU'}
     ],
     bootstrap: [AppComponent]
 })

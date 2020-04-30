@@ -29,7 +29,7 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     @ViewChild(ThreeDirective, { static: false }) three: ThreeDirective;
 
     @Input() hierarchy: Hierarchy;
-    @Input() selected: Set<string>;
+    @Input() selected: string[];
     @Input() layoutName: string;
     @Input() displayOptions: DisplayOptions;
 
@@ -45,9 +45,14 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     ngOnChanges(): void {
         this.data = this.layouts.find(layout => layout.name === this.layoutName)
             .place(this.hierarchy, this.displayOptions);
+
     }
 
     ngAfterViewInit() {
         this.three.resize()
+    }
+
+    public focusOnElement(el: string) {
+        this.three.focus(el);
     }
 }

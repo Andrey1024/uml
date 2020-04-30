@@ -7,6 +7,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.*;
@@ -24,7 +25,8 @@ import ru.avlasov.reverse.Reverser;
 import ru.avlasov.reverse.model.Element;
 import ru.avlasov.reverse.model.Node;
 import ru.avlasov.reverse.model.Project;
-import ru.avlasov.web.Commit;
+import ru.avlasov.web.responses.Commit;
+import ru.avlasov.web.responses.RepositoryInfo;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -61,16 +63,27 @@ public class ProjectParser {
         }
     }
 
-    public boolean hasRepository(String name) {
-        return repositoryMap.containsKey(name);
-    }
-
     @PreDestroy
     private void clean() {
     }
 
-    public List<String> getRepositoryList() {
-        return new ArrayList<>(repositoryMap.keySet());
+    public void removeRepository(String name) {
+        File repoDir = new File(repositoryDir, name.toLowerCase());
+        try {
+            FileUtils.deleteDirectory(repoDir);
+            repositoryMap.remove(name);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<RepositoryInfo> getRepositoryList() {
+        List<RepositoryInfo> result = new ArrayList<>();
+        for (String repository : repositoryMap.keySet()) {
+            String url = repositoryMap.get(repository).getConfig().getString("remote", "origin", "url");
+            result.add(new RepositoryInfo(repository, url));
+        }
+        return result;
     }
 
     public void cloneRepository(String url, String name) throws GitAPIException {

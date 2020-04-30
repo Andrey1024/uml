@@ -1,10 +1,12 @@
 package ru.avlasov.web;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import ru.avlasov.ProjectParser;
 import ru.avlasov.reverse.model.Project;
+import ru.avlasov.web.responses.Commit;
+import ru.avlasov.web.responses.CreateRequest;
+import ru.avlasov.web.responses.RepositoryInfo;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,7 +22,7 @@ public class UmlController {
 
 
     @GetMapping("/api/repository")
-    public List<String> getRepositories() {
+    public List<RepositoryInfo> getRepositories() {
         return parser.getRepositoryList();
     }
 
@@ -29,10 +31,15 @@ public class UmlController {
         return parser.getCommits(name.toLowerCase());
     }
 
+    @DeleteMapping("/api/repository/{name}")
+    public void removeRepository(@PathVariable String name) {
+        parser.removeRepository(name.toLowerCase());
+    }
+
     @PostMapping("/api/repository")
-    public String addRepository(@RequestBody CreateRequest body) throws GitAPIException, IOException {
+    public RepositoryInfo addRepository(@RequestBody CreateRequest body) throws GitAPIException {
         parser.cloneRepository(body.getUrl(), body.getName().toLowerCase());
-        return body.getName().toLowerCase();
+        return new RepositoryInfo(body.getName().toLowerCase(), body.getUrl());
     }
 
     @GetMapping("/api/repository/{name}/{commit}")

@@ -12,6 +12,11 @@
 
 .mat-tree-node {
   min-height: 30px;
+
+}
+
+.mat-tree-node.hidden {
+  display: none;
 }
 
 .mat-tree {

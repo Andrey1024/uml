@@ -4,6 +4,8 @@ import {
     ElementRef,
     EventEmitter,
     HostListener,
+    Inject,
+    InjectionToken,
     Input,
     OnChanges,
     OnDestroy,
@@ -17,13 +19,15 @@ import { TooltipComponent } from '../components/tooltip/tooltip.component';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 
+export const RENDERER = new InjectionToken<THREE.Renderer>('renderer');
+
 @Directive({
     selector: '[umlThree]',
     exportAs: 'three'
 })
 export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
-    @Input() visibleNodes: Set<string>;
+    @Input() visibleNodes: string[];
     @Output() select = new EventEmitter();
 
     tooltipEl: HTMLDivElement;
@@ -31,7 +35,6 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     tooltipOverlay: OverlayRef;
 
     private scene = new THREE.Scene();
-    private renderer = new THREE.WebGLRenderer({alpha: true});
     private camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
     private controls = new PointerLockControls(this.camera);
     private clock = new THREE.Clock();
@@ -50,7 +53,9 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
 
     private mouse = new THREE.Vector2();
 
-    constructor(private element: ElementRef<HTMLDivElement>, private overlay: Overlay) {
+    constructor(@Inject(RENDERER) private renderer,
+                private element: ElementRef<HTMLDivElement>,
+                private overlay: Overlay) {
         this.tooltipEl = document.createElement('div');
         this.tooltipEl.style.position = 'absolute';
 
@@ -174,6 +179,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         this.element.nativeElement.appendChild(this.renderer.domElement);
         this.element.nativeElement.appendChild(this.tooltipEl);
         this.resize();
+        this.animate();
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -184,10 +190,9 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
             }
             if (this.objects && this.objects.length) {
                 this.scene.add(...this.objects);
-                this.animate();
             }
         }
-        if (this.objects && changes.visibleNodes) {
+        if (this.objects && (changes.visibleNodes || changes.objects)) {
             this.objects.forEach(o => this.toggleVisibility(o))
         }
     }
@@ -196,13 +201,15 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         if (obj.type === 'Group') {
             obj.children.forEach(child => this.toggleVisibility(child));
         }
-        obj.visible = !obj.name || this.visibleNodes.has(obj.name);
+        obj.visible = !obj.name || this.visibleNodes.includes(obj.name);
     }
 
     ngOnDestroy(): void {
         cancelAnimationFrame(this.animationFrame);
+        this.disposeObjects(...this.objects);
         this.controls.dispose();
-        this.renderer.dispose();
+        this.scene.dispose();
+        this.element.nativeElement.remove();
     }
 
 
@@ -212,7 +219,6 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
     }
-
 
 
     focus(name: string) {
@@ -249,7 +255,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
 
     private animate() {
         this.animationFrame = requestAnimationFrame(() => this.animate());
-        this.renderer.setClearColor( 0xffffff, 0)
+        this.renderer.setClearColor(0xffffff, 0)
 
         const delta = this.clock.getDelta();
 

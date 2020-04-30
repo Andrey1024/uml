@@ -1,6 +1,6 @@
 import { Element } from "./element";
 
-export interface SourceRoot {
+export interface CommitState {
     sourceRoots: string[];
     data: Element[];
 }

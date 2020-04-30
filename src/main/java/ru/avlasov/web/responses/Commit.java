@@ -1,4 +1,4 @@
-package ru.avlasov.web;
+package ru.avlasov.web.responses;
 
 import java.util.Date;
 
@@ -24,9 +24,7 @@ public class Commit {
             this.email = email;
             this.name = name;
         }
-    };
-
-    ;
+    }
 
     public String getName() {
         return name;

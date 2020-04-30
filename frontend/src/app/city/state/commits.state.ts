@@ -58,10 +58,12 @@ export class CommitsState {
     @Selector([CommitsState.getAuthorsByEmail])
     static getAuthorsHSL(authors: { [email: string]: Author }): { [email: string]: number } {
         const result = {};
-        let i = 70;
-        for (const email of Object.keys(authors)) {
+        const authorEmails = Object.keys(authors);
+        const delta = Math.trunc(360 / authorEmails.length);
+        let i = 0
+        for (const email of authorEmails) {
             result[email] = i;
-            i += 70;
+            i += delta;
         }
         return result;
     }

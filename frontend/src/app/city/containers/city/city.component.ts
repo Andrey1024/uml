@@ -1,28 +1,32 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { Select, Store } from "@ngxs/store";
 import { BehaviorSubject, Observable } from "rxjs";
 import { Author, Commit } from "../../model/server-model/commit.model";
 import { ActivatedRoute } from "@angular/router";
 import { CommitsState, Load } from "../../state/commits.state";
 import {
-    AuthorView,
+    AuthorView, Focus,
     LoadState,
     RepositoryState,
     SelectAuthors,
     SelectCommit,
     SelectNodes,
-    SelectSourceRoot
+    SelectSourceRoot, UpdateSearch
 } from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
 import { Hierarchy } from "../../model/hierarchy.model";
 import { DisplayOptions, LayoutService } from "../../service/layout.service";
+import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/canvas-visualizer.component";
 
 @Component({
     selector: 'uml-city',
     templateUrl: './city.component.html',
-    styleUrls: ['./city.component.scss']
+    styleUrls: ['./city.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CityComponent implements OnInit {
+    @ViewChild(CanvasVisualizerComponent, { static: true }) canvas: CanvasVisualizerComponent;
+
     @Select(CommitsState.getRepositoryName)
     name$: Observable<string>
 
@@ -38,6 +42,9 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getLoadedCommits)
     loadedCommits$: Observable<Commit[]>;
 
+    @Select(RepositoryState.getLoadingCommits)
+    loadingCommits$: Observable<Commit[]>;
+
     @Select(RepositoryState.getTreeItems)
     treeItems$: Observable<ItemNode[]>;
 
@@ -45,7 +52,7 @@ export class CityComponent implements OnInit {
     hierarchy$: Observable<Hierarchy>;
 
     @Select(RepositoryState.getSelectedNodes)
-    selectedNodes$: Observable<Set<string>>;
+    selectedNodes$: Observable<string[]>;
 
     @Select(RepositoryState.getSelectedCommit)
     selectedCommit$: Observable<string>;
@@ -63,7 +70,10 @@ export class CityComponent implements OnInit {
     options$: Observable<DisplayOptions>;
 
     @Select(CommitsState.getAuthorsHSL)
-    authorColors$: Observable<{ [email: string]: number }>
+    authorColors$: Observable<{ [email: string]: number }>;
+
+    @Select(RepositoryState.getSearch)
+    search$: Observable<string>;
 
     layoutNames = this.layouts.map(layout => layout.name);
     selectedLayout$ = new BehaviorSubject<string>(this.layoutNames[0]);
@@ -103,5 +113,13 @@ export class CityComponent implements OnInit {
 
     selectAuthorsView(showAuthors: boolean) {
         this.store.dispatch(new AuthorView(showAuthors));
+    }
+
+    updateSearch(search: string) {
+        this.store.dispatch(new UpdateSearch(search))
+    }
+
+    focusNode(node: string) {
+        this.canvas.focusOnElement(node);
     }
 }

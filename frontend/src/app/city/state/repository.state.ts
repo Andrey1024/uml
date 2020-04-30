@@ -1,14 +1,14 @@
-import { Action, Selector, State, StateContext, Store } from '@ngxs/store';
+import { Action, createSelector, Selector, State, StateContext, Store } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
 import { tap } from "rxjs/operators";
 import { Hierarchy } from "../model/hierarchy.model";
-import { SourceRoot } from "../model/server-model/source-root.model";
+import { CommitState } from "../model/server-model/commit-state.model";
 import { Injectable } from "@angular/core";
 import { ItemNode } from "../model/tree-item.model";
 import { Element } from "../model/server-model/element";
 import { CommitsState, CommitsStateModel, Load } from "./commits.state";
-import { insertItem, patch } from "@ngxs/store/operators";
-import { keyBy, mapValues, set } from "lodash-es";
+import { insertItem, patch, removeItem } from "@ngxs/store/operators";
+import { keyBy, map, mapValues, set } from "lodash-es";
 import { Author, Commit } from "../model/server-model/commit.model";
 import { DisplayOptions } from "../service/layout.service";
 
@@ -69,13 +69,22 @@ export class AuthorView {
     }
 }
 
+export class UpdateSearch {
+    static readonly type = '[Repository] updateSearch';
+
+    constructor(public searchString: string) {
+    }
+}
+
 export interface RepositoryStateModel {
     data: { [path: string]: { [commit: string]: Element } };
     loadedCommits: string[];
+    loadingCommits: string[];
     sourceRoot: string;
     selectedNodes: string[];
     selectedAuthors: string[];
     showAuthors: boolean;
+    search: string;
     path: string;
     commit: string;
     highLight: string;
@@ -105,6 +114,16 @@ function createHierarchy(elements: Element[]): Hierarchy {
     return collapse(packageMap);
 }
 
+// function createTreeNew(elements: Element[]): ItemNode[] {
+//     const nodesMap = new Map<string, ItemNode>();
+//     for (const element of elements) {
+//         const elNode = new ItemNode(element.fullPath, element.name, null);
+//         if (!nodesMap.has(element.parentPackage)) {
+//             nodesMap.set(element.parentPackage)
+//         }
+//     }
+// }
+
 function createTree(hierarchy: any, pack: string = null): ItemNode[] {
     return Object.keys(hierarchy).map(path => hierarchy[path].type
         ? new ItemNode(hierarchy[path].fullPath, hierarchy[path].name, null)
@@ -116,13 +135,15 @@ function createTree(hierarchy: any, pack: string = null): ItemNode[] {
     defaults: {
         data: {},
         loadedCommits: [],
+        loadingCommits: [],
         sourceRoot: "",
         path: "",
         selectedNodes: [],
         selectedAuthors: [],
         commit: null,
         highLight: null,
-        showAuthors: false
+        showAuthors: false,
+        search: ''
     },
     children: [CommitsState]
 })
@@ -144,8 +165,8 @@ export class RepositoryState {
     }
 
     @Selector([RepositoryState])
-    static getSelectedNodes(state: RepositoryStateModel) {
-        return new Set(state.selectedNodes);
+    static getSelectedNodes(state: RepositoryStateModel): string[] {
+        return state.selectedNodes;
     }
 
     @Selector([RepositoryState])
@@ -164,14 +185,36 @@ export class RepositoryState {
     }
 
     @Selector([RepositoryState])
+    static getLoadingCommitNames(state: RepositoryStateModel): string[] {
+        return state.loadingCommits;
+    }
+
+    @Selector([RepositoryState])
     static getSourceRoot(state: RepositoryStateModel) {
         return state.sourceRoot;
     }
+
 
     @Selector([RepositoryState.getLoadedCommitNames, CommitsState])
     static getLoadedCommits(loaded: string[], commits: CommitsStateModel) {
         return loaded.map(name => commits.byId[name]).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
     }
+
+    @Selector([RepositoryState.getLoadingCommitNames, CommitsState])
+    static getLoadingCommits(loaded: string[], commits: CommitsStateModel) {
+        return loaded.map(name => commits.byId[name]).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+    }
+
+    // static getCommitElementsImmutable(commitIndex: number) {
+    //     if (commitIndex === 0) {
+    //         return createSelector([RepositoryState.getElements, RepositoryState.getLoadedCommits], (elements, commits) => {
+    //
+    //         })
+    //     }
+    //     return createSelector([RepositoryState.getCommitElementsImmutable(commitIndex - 1), RepositoryState.getLoadedCommits], previous => {
+    //         return
+    //     })
+    // }
 
     @Selector([RepositoryState.getElements, RepositoryState.getSelectedCommit, RepositoryState.getLoadedCommits, RepositoryState.getSelectedAuthors])
     static getCommitElements(data, commit, commits, authorEmails: string[]): Element[] {
@@ -220,6 +263,12 @@ export class RepositoryState {
             .sort((a, b) => b.count - a.count);
     }
 
+    @Selector([RepositoryState])
+    static getSearch(state: RepositoryStateModel) {
+        return state.search;
+    }
+
+
     @Selector([RepositoryState.getFilteredElements])
     static getHierarchy(elements: Element[]) {
         return createHierarchy(elements);
@@ -241,8 +290,9 @@ export class RepositoryState {
     @Action(LoadState)
     loadState(ctx: StateContext<RepositoryStateModel>, { commit }: LoadState) {
         const name = this.store.selectSnapshot(CommitsState.getRepositoryName);
+        ctx.setState(patch({ loadingCommits: insertItem(commit) }));
 
-        return this.http.get<SourceRoot>(`/api/repository/${name}/${commit}`).pipe(
+        return this.http.get<CommitState>(`/api/repository/${name}/${commit}`).pipe(
             tap(result => {
                 const { data } = ctx.getState();
                 const resultMap = keyBy(result.data, 'fullPath');
@@ -256,8 +306,20 @@ export class RepositoryState {
                 }
                 ctx.setState(patch({
                     data: newData,
-                    loadedCommits: insertItem(commit)
+                    loadedCommits: insertItem(commit),
+                    loadingCommits: removeItem(c => c === commit),
+                    commit: c => c === null ? commit : c
                 }));
+            }),
+            tap(result => {
+                if (this.store.selectSnapshot(RepositoryState.getLoadedCommitNames).length === 1) {
+                    const elements = this.store.selectSnapshot(RepositoryState.getFilteredElements);
+                    const allNodes = new Set([...map(elements, 'fullPath'), ...map(elements, 'parentPackage')]);
+                    ctx.setState(patch({
+                        selectedAuthors: map(this.store.selectSnapshot(RepositoryState.getAuthorsWithCount), 'author.email'),
+                        selectedNodes: [...allNodes]
+                    }))
+                }
             })
         );
     }
@@ -288,6 +350,12 @@ export class RepositoryState {
         ctx.patchState({ selectedAuthors: authors });
     }
 
+
+    @Action(UpdateSearch)
+    updateSearch(ctx: StateContext<RepositoryStateModel>, { searchString }: UpdateSearch) {
+        ctx.patchState({ search: searchString });
+    }
+
     @Action(SetRootPath)
     setRoot(ctx: StateContext<RepositoryStateModel>, { rootPath }: SetRootPath) {
         // ctx.patchState({ rootPath });
@@ -300,7 +368,6 @@ export class RepositoryState {
         }
     }
 
-
     @Action(Load)
     resetState(ctx: StateContext<RepositoryStateModel>) {
         ctx.patchState({
@@ -311,7 +378,9 @@ export class RepositoryState {
             selectedNodes: [],
             selectedAuthors: [],
             commit: null,
-            highLight: null
+            highLight: null,
+            loadingCommits: [],
+            showAuthors: false
         })
     }
 }

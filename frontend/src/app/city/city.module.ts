@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { InjectionToken, NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CanvasVisualizerComponent } from './components/canvas-visualizer/canvas-visualizer.component';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -10,7 +10,7 @@ import { MatTreeModule } from '@angular/material/tree';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
-import { ThreeDirective } from './directives/three.directive';
+import { RENDERER, ThreeDirective } from './directives/three.directive';
 import { TreeVisualizerComponent } from './components/tree-visualizer/tree-visualizer.component';
 import { NgxsModule } from "@ngxs/store";
 import { RepositoryState } from "./state/repository.state";
@@ -34,6 +34,10 @@ import { RepositoriesState } from "./state/repositories.state";
 import { MatCardModule } from "@angular/material/card";
 import { AddRepoDialogComponent } from './components/add-repo-dialog/add-repo-dialog.component';
 import { MatDialogModule } from "@angular/material/dialog";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatProgressBarModule } from "@angular/material/progress-bar";
+import * as THREE from 'three';
+
 
 @NgModule({
     imports: [
@@ -55,8 +59,10 @@ import { MatDialogModule } from "@angular/material/dialog";
         MatInputModule,
         MatIconModule,
         MatSidenavModule,
+        MatProgressBarModule,
         MatChipsModule,
         MatListModule,
+        MatProgressSpinnerModule,
         RouterModule.forChild([
             { path: "", component: RepositoriesPageComponent },
             { path: "repository/:name", component: CityComponent }]),
@@ -73,6 +79,9 @@ import { MatDialogModule } from "@angular/material/dialog";
         AuthorsListComponent,
         RepositoriesPageComponent,
         AddRepoDialogComponent,
+    ],
+    providers: [
+        { provide: RENDERER, useValue: new THREE.WebGLRenderer({ alpha: true }) }
     ],
     entryComponents: [
         TooltipComponent,

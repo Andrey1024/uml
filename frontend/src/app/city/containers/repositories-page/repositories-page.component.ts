@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Select, Store } from "@ngxs/store";
-import { Create, LoadList, RepositoriesState } from "../../state/repositories.state";
+import { Create, LoadList, Remove, RepositoriesState } from "../../state/repositories.state";
 import { Observable } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { AddRepoDialogComponent } from "../../components/add-repo-dialog/add-repo-dialog.component";
+import { RepositoryInfo } from "../../model/server-model/repository-info.model";
 
 @Component({
     selector: 'uml-repositories-page',
@@ -12,7 +13,15 @@ import { AddRepoDialogComponent } from "../../components/add-repo-dialog/add-rep
 })
 export class RepositoriesPageComponent implements OnInit {
     @Select(RepositoriesState.getRepositories)
-    repositories$: Observable<string[]>;
+    repositories$: Observable<RepositoryInfo[]>;
+
+    @Select(RepositoriesState.isLoaded)
+    isLoaded$: Observable<boolean>;
+
+    @Select(RepositoriesState.isPending)
+    isPending$: Observable<boolean>;
+
+    creating = false;
 
     constructor(private store: Store, private dialog: MatDialog) {
     }
@@ -25,8 +34,14 @@ export class RepositoriesPageComponent implements OnInit {
         this.dialog.open(AddRepoDialogComponent).afterClosed()
             .subscribe(result => {
                 if (result) {
-                    this.store.dispatch(new Create(result.name, result.url))
+                    this.creating = true;
+                    this.store.dispatch(new Create(result.name, result.url)).subscribe(() => this.creating = false)
                 }
             })
+    }
+
+    removeRepository(event: MouseEvent, repo: string) {
+        event.stopPropagation();
+        this.store.dispatch(new Remove(repo));
     }
 }

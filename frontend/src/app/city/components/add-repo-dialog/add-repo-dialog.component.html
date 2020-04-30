@@ -1,11 +1,11 @@
 <h1 mat-dialog-title>Добавить репозиторий</h1>
-<div mat-dialog-content [formGroup]="form" fxLayout="row" fxLayoutGap="10px">
+<div mat-dialog-content [formGroup]="form" fxLayout="column" fxLayoutGap="10px">
     <mat-form-field>
         <mat-label>Name</mat-label>
         <input matInput formControlName="name">
     </mat-form-field>
     <mat-form-field>
-        <mat-label>URL</mat-label>
+        <mat-label>Git url</mat-label>
         <input matInput formControlName="url">
     </mat-form-field>
 </div>

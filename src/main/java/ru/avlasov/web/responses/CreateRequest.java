@@ -1,4 +1,4 @@
-package ru.avlasov.web;
+package ru.avlasov.web.responses;
 
 public class CreateRequest {
     private String url;

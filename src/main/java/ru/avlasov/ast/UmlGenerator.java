@@ -1,8 +1,5 @@
 package ru.avlasov.ast;
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ParseResult;
-import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
@@ -11,10 +8,6 @@ import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclar
 import org.eclipse.uml2.uml.*;
 import org.eclipse.uml2.uml.Class;
 import org.eclipse.uml2.uml.Package;
-import ru.avlasov.web.Commit;
-
-import java.io.InputStream;
-import java.util.List;
 
 public class UmlGenerator {
     private Model model;

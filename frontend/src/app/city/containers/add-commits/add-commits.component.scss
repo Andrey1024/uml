@@ -1,11 +1,16 @@
-.list-container {
-  height: 100%;
-}
-
 .mat-action-list {
   width: 100%;
 }
 
 ::ng-deep .cdk-virtual-scroll-content-wrapper {
   width: 100%;
+}
+
+.add-commit-title {
+  font-weight: normal;
+  padding-left: 16px;
+}
+
+.add-commit-container {
+  height: 100%;
 }
