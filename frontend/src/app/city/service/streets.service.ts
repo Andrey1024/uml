@@ -137,12 +137,12 @@ export class StreetsService implements LayoutService {
             default:
             case 'CLASS':
                 geometry = new THREE.BoxGeometry(props.size, props.height, props.size)
-                    .translate(0, node.lifeRatio * 50, 0);
+                    .translate(0, props.height / 2 + node.lifeRatio * 50, 0);
                 break;
             case 'INTERFACE':
                 const rad = props.size / 2;
                 geometry = new THREE.CylinderGeometry(rad, rad, props.height, 32, 32)
-                    .translate(0, node.lifeRatio * 50, 0);
+                    .translate(0, props.height / 2 + node.lifeRatio * 50, 0);
                 break;
         }
         const mesh = new THREE.Mesh(geometry, material);
@@ -244,7 +244,7 @@ export class StreetsService implements LayoutService {
         mesh.matrixAutoUpdate = false;
         mesh.matrixWorldNeedsUpdate = true;
         packageGroup.add(mesh, ...children);
-        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, -(lifeRatio - lastAge) * 25, (left - right) / 2));
+        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, 0, (left - right) / 2));
 
         if (name !== null) {
             mesh.userData = { data: { type: 'PACKAGE', name } };
