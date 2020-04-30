@@ -3,6 +3,7 @@ import { Hierarchy } from "../model/hierarchy.model";
 
 export interface DisplayOptions {
     showAuthors: boolean;
+    selectedAuthors: string[];
 }
 
 export abstract class LayoutService {

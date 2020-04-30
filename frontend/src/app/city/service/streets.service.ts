@@ -12,7 +12,7 @@ interface UserData {
     width: number;
     height: number;
     length: number;
-    lifeSpan: number;
+    lifeRatio: number;
     name: string;
     data: { type: string, name: string };
 }
@@ -57,7 +57,7 @@ export class StreetsService implements LayoutService {
 
     private process(hierarchy: any, options: DisplayOptions, name: string = null, depth = 1): THREE.Object3D {
         return hierarchy.type
-            ? options.showAuthors ? this.createAuthorMesh(hierarchy) : this.createElementMesh(hierarchy)
+            ? options.showAuthors ? this.createAuthorMesh(hierarchy, options.selectedAuthors) : this.createElementMesh(hierarchy)
             : this.createPackageMesh(map(hierarchy, (v, k) =>
                 this.process(v, options, name ? `${name}.${k}` : k, depth + 1)), name, depth);
     }
@@ -77,14 +77,14 @@ export class StreetsService implements LayoutService {
         }
     }
 
-    private createAuthorMesh(node: NodeModel): THREE.Object3D {
+    private createAuthorMesh(node: NodeModel, selectedAuthors: string[]): THREE.Object3D {
         const props = this.getElementProps(node as Element);
         const result = new THREE.Group();
-        const authors = Object.keys(node.authors)
+        const authors = selectedAuthors
             .map(key => ({ author: key, count: node.authors[key] }))
             .filter(author => author.count > 0)
             .sort((a, b) => b.count - a.count).slice(0, 10);
-        let offset = node.lifeSpan * 50;
+        let offset = node.lifeRatio * 50;
         for (let i = 0; i < authors.length; i++) {
             const color = this.getAuthorColor(authors[i].author);
             const material = new THREE.MeshPhongMaterial({
@@ -117,7 +117,7 @@ export class StreetsService implements LayoutService {
         result.userData = <UserData> {
             width: props.size,
             length: props.size,
-            lifeSpan: node.lifeSpan,
+            lifeRatio: node.lifeRatio,
             name: node.fullPath,
             height: offset,
             data: node
@@ -137,12 +137,12 @@ export class StreetsService implements LayoutService {
             default:
             case 'CLASS':
                 geometry = new THREE.BoxGeometry(props.size, props.height, props.size)
-                    .translate(0, node.lifeSpan * 50, 0);
+                    .translate(0, node.lifeRatio * 50, 0);
                 break;
             case 'INTERFACE':
                 const rad = props.size / 2;
                 geometry = new THREE.CylinderGeometry(rad, rad, props.height, 32, 32)
-                    .translate(0, node.lifeSpan * 50, 0);
+                    .translate(0, node.lifeRatio * 50, 0);
                 break;
         }
         const mesh = new THREE.Mesh(geometry, material);
@@ -151,7 +151,7 @@ export class StreetsService implements LayoutService {
         mesh.userData = <UserData> {
             width: props.size,
             length: props.size,
-            lifeSpan: node.lifeSpan,
+            lifeRatio: node.lifeRatio,
             name: node.fullPath,
             height: props.height,
             data: node
@@ -164,9 +164,9 @@ export class StreetsService implements LayoutService {
         packageGroup.matrixAutoUpdate = false;
         packageGroup.matrixWorldNeedsUpdate = true;
         const children = objects.sort((a, b) => {
-            if (a.userData.lifeSpan < b.userData.lifeSpan) {
+            if (a.userData.lifeRatio < b.userData.lifeRatio) {
                 return 1;
-            } else if (a.userData.lifeSpan > b.userData.lifeSpan) {
+            } else if (a.userData.lifeRatio > b.userData.lifeRatio) {
                 return -1;
             } else {
                 return a.userData.name.localeCompare(b.userData.name);
@@ -205,10 +205,10 @@ export class StreetsService implements LayoutService {
         let leftOffset = this.padding, rightOffset = this.padding, lastAge = 0, lastSegment = 0, left = 0, right = 0;
         for (let i = 0; i < children.length; i++) {
             const childData = children[i].userData as UserData;
-            if (childData.lifeSpan < lastAge) {
+            if (childData.lifeRatio < lastAge) {
                 const maxOffset = Math.max(leftOffset, rightOffset);
                 geometry.merge(createSegment(lastSegment, maxOffset - lastSegment, lastAge * 50));
-                geometry.merge(createBridge(maxOffset, lastAge * 50, childData.lifeSpan * 50));
+                geometry.merge(createBridge(maxOffset, lastAge * 50, childData.lifeRatio * 50));
                 lastSegment = leftOffset = rightOffset = maxOffset + this.padding;
             }
 
@@ -226,10 +226,10 @@ export class StreetsService implements LayoutService {
                 right = Math.max(right, childData.length);
             }
             children[i].matrixWorldNeedsUpdate = true;
-            lastAge = childData.lifeSpan;
+            lastAge = childData.lifeRatio;
         }
 
-        const lifeSpan = Math.max(...children.map(c => c.userData.lifeSpan));
+        const lifeRatio = Math.max(...children.map(c => c.userData.lifeRatio));
         const length = Math.max(leftOffset, rightOffset) + this.padding;
         geometry.merge(createSegment(lastSegment, length - lastSegment, lastAge * 50));
         geometry.computeFaceNormals();
@@ -244,15 +244,15 @@ export class StreetsService implements LayoutService {
         mesh.matrixAutoUpdate = false;
         mesh.matrixWorldNeedsUpdate = true;
         packageGroup.add(mesh, ...children);
-        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, -(lifeSpan - lastAge) * 25, (left - right) / 2));
+        packageGroup.applyMatrix(new THREE.Matrix4().makeTranslation(-length / 2, -(lifeRatio - lastAge) * 25, (left - right) / 2));
 
         if (name !== null) {
             mesh.userData = { data: { type: 'PACKAGE', name } };
             packageGroup.userData = <UserData> {
                 width: width + left + right,
                 length,
-                height: (lifeSpan - lastAge) * 50,
-                lifeSpan,
+                height: (lifeRatio - lastAge) * 50,
+                lifeRatio,
                 name,
                 data: { type: 'PACKAGE', name }
             };

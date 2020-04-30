@@ -4,4 +4,5 @@ export interface ElementModel {
     fullPath: string;
     parentPackage: string;
     lifeSpan: number;
+    lifeRatio: number;
 }

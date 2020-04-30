@@ -55,16 +55,11 @@
         <button mat-icon-button (click)="commits.toggle()" fxFlex="none">
             <mat-icon>add</mat-icon>
         </button>
-        <mat-chip-list [multiple]="false" fxFlex="1 0 auto">
+        <mat-chip-list [multiple]="false">
             <mat-chip color="accent"
                       *ngFor="let commit of loadedCommits$ | async"
                       (click)="selectCommit(commit)"
                       [selected]="(selectedCommit$ | async) === commit.name"
-                      [selectable]="false">{{ commit.date | date : "dd-MM-yyyy" }}</mat-chip>
-        </mat-chip-list>
-        <mat-chip-list class="loading-chips">
-            <mat-chip color="accent"
-                      *ngFor="let commit of loadingCommits$ | async"
                       [selectable]="false">{{ commit.date | date : "dd-MM-yyyy" }}</mat-chip>
         </mat-chip-list>
     </mat-toolbar>

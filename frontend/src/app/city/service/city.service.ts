@@ -15,7 +15,7 @@ interface UserData {
     width: number;
     length: number;
     height: number;
-    lifeSpan: number;
+    lifeRatio: number;
     name: string;
     data: { type: string, name: string };
 }
@@ -57,7 +57,7 @@ export class CityService implements LayoutService {
 
     private process(hierarchy: any, options: DisplayOptions, name: string = null): THREE.Object3D {
         return hierarchy.type
-            ? options.showAuthors ? this.createAuthorMesh(hierarchy) : this.createElementMesh(hierarchy)
+            ? options.showAuthors ? this.createAuthorMesh(hierarchy, options.selectedAuthors) : this.createElementMesh(hierarchy)
             : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, options, name ? `${name}.${k}` : k)), name);
     }
 
@@ -76,10 +76,10 @@ export class CityService implements LayoutService {
         }
     }
 
-    private createAuthorMesh(node: NodeModel): THREE.Object3D {
+    private createAuthorMesh(node: NodeModel, selectedAuthors: string[]): THREE.Object3D {
         const props = this.getElementProps(node as Element);
         const result = new THREE.Group();
-        const authors = Object.keys(node.authors)
+        const authors = selectedAuthors
             .map(key => ({ author: key, count: node.authors[key] }))
             .filter(author => author.count > 0)
             .sort((a, b) => b.count - a.count).slice(0, 10);
@@ -111,7 +111,7 @@ export class CityService implements LayoutService {
             mesh.userData = <UserData> {
                 width: props.size + this.padding * 2,
                 length: props.size + this.padding * 2,
-                lifeSpan: node.lifeSpan,
+                lifeRatio: node.lifeRatio,
                 name: node.fullPath,
                 height: offset,
                 data: node
@@ -124,7 +124,7 @@ export class CityService implements LayoutService {
         result.userData = <UserData> {
             width: props.size + this.padding * 2,
             length: props.size + this.padding * 2,
-            lifeSpan: node.lifeSpan,
+            lifeRatio: node.lifeRatio,
             name: node.fullPath,
             height: offset,
             data: node
@@ -135,7 +135,7 @@ export class CityService implements LayoutService {
 
     private createElementMesh(node: Element): THREE.Object3D {
         const props = this.getElementProps(node);
-        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), node.lifeSpan);
+        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), node.lifeRatio);
         const material = new THREE.MeshPhongMaterial({
             color, side: THREE.DoubleSide
         });
@@ -159,7 +159,7 @@ export class CityService implements LayoutService {
         mesh.userData = <UserData> {
             width: props.size + this.padding * 2,
             length: props.size + this.padding * 2,
-            lifeSpan: node.lifeSpan,
+            lifeRatio: node.lifeRatio,
             name: node.fullPath,
             height: props.height,
             data: node
@@ -183,14 +183,14 @@ export class CityService implements LayoutService {
                 return a.userData.name.localeCompare(b.userData.name);
             }
         })];
-        const lifeSpan = Math.max(...children.map(c => c.userData.lifeSpan));
+        const lifeRatio = Math.max(...children.map(c => c.userData.lifeRatio));
 
 
         const grid = new Grid(children);
         const packageGroup = grid.finalize();
         const packageSize = grid.dimensions;
 
-        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), lifeSpan);
+        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), lifeRatio);
         const material = new THREE.MeshPhongMaterial({ color });
         const geometry = name === null
             ? new THREE.PlaneGeometry(packageSize.x, packageSize.z).rotateX(-Math.PI / 2)
@@ -209,7 +209,7 @@ export class CityService implements LayoutService {
                 length: packageSize.x + this.padding * 2,
                 width: packageSize.z + this.padding * 2,
                 height: packageSize.y + 30,
-                lifeSpan,
+                lifeRatio,
                 name
             };
         }

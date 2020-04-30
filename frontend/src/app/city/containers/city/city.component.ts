@@ -5,18 +5,21 @@ import { Author, Commit } from "../../model/server-model/commit.model";
 import { ActivatedRoute } from "@angular/router";
 import { CommitsState, Load } from "../../state/commits.state";
 import {
-    AuthorView, Focus,
+    AuthorView,
     LoadState,
     RepositoryState,
     SelectAuthors,
     SelectCommit,
     SelectNodes,
-    SelectSourceRoot, UpdateSearch
+    SelectSourceRoot,
+    UpdateSearch
 } from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
 import { Hierarchy } from "../../model/hierarchy.model";
 import { DisplayOptions, LayoutService } from "../../service/layout.service";
 import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/canvas-visualizer.component";
+import { switchMap } from "rxjs/operators";
+import { DataManageSelectors } from "../../state/data-manage.selectors";
 
 @Component({
     selector: 'uml-city',
@@ -26,6 +29,9 @@ import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/ca
 })
 export class CityComponent implements OnInit {
     @ViewChild(CanvasVisualizerComponent, { static: true }) canvas: CanvasVisualizerComponent;
+
+    @Select(RepositoryState.getCommitIndex)
+    commitIndex$: Observable<number>;
 
     @Select(CommitsState.getRepositoryName)
     name$: Observable<string>
@@ -45,11 +51,15 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getLoadingCommits)
     loadingCommits$: Observable<Commit[]>;
 
-    @Select(RepositoryState.getTreeItems)
-    treeItems$: Observable<ItemNode[]>;
 
-    @Select(RepositoryState.getHierarchy)
-    hierarchy$: Observable<Hierarchy>;
+    treeItems$: Observable<ItemNode[]> = this.commitIndex$.pipe(
+        switchMap(i => this.store.select(DataManageSelectors.getTreeItems(i)))
+    );
+
+    // @Select(RepositoryState.getHierarchy)
+    hierarchy$: Observable<Hierarchy> = this.commitIndex$.pipe(
+        switchMap(i => this.store.select(DataManageSelectors.getHierarchy(i)))
+    );
 
     @Select(RepositoryState.getSelectedNodes)
     selectedNodes$: Observable<string[]>;
@@ -60,13 +70,15 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getSelectedAuthors)
     selectedAuthors$: Observable<string[]>;
 
-    @Select(RepositoryState.getSourceRoots)
-    sourceRoots$: Observable<string[]>;
+    // @Select(RepositoryState.getSourceRoots)
+    sourceRoots$: Observable<any> = this.commitIndex$.pipe(
+        switchMap(i => this.store.select(DataManageSelectors.getSourceRoots(i)))
+    );
 
     @Select(RepositoryState.getSourceRoot)
     sourceRoot$: Observable<string>
 
-    @Select(RepositoryState.getLayoutOptions)
+    @Select(RepositoryState.getDisplayOptions)
     options$: Observable<DisplayOptions>;
 
     @Select(CommitsState.getAuthorsHSL)
