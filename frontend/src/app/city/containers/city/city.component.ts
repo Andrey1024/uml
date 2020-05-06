@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
-import { Actions, ofAction, ofActionDispatched, Select, Store } from "@ngxs/store";
+import { Actions, ofAction, Select, Store } from "@ngxs/store";
 import { BehaviorSubject, Observable } from "rxjs";
 import { Author, Commit } from "../../model/server-model/commit.model";
 import { ActivatedRoute } from "@angular/router";
@@ -11,7 +11,8 @@ import {
     SelectAuthors,
     SelectCommit,
     SelectNodes,
-    SelectSourceRoot, SetRootPath,
+    SelectSourceRoot,
+    SetRootPath,
     UpdateSearch
 } from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
@@ -21,7 +22,6 @@ import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/ca
 import { switchMap, tap } from "rxjs/operators";
 import { DataManageSelectors } from "../../state/data-manage.selectors";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { ActionContext } from "@ngxs/store/src/actions-stream";
 
 @Component({
     selector: 'uml-city',
@@ -102,7 +102,7 @@ export class CityComponent implements OnInit {
                 const loading = this.store.selectSnapshot(RepositoryState.getLoadingCommits);
                 if (loading.length > 0) {
                     this.snackBar.open(`Выполняется загрузка ${loading.length} версий`, null,
-                        { horizontalPosition: "end", verticalPosition: "top" });
+                        { horizontalPosition: "center", verticalPosition: "top", panelClass: 'toast-message' });
                 } else {
                     this.snackBar.dismiss();
                 }

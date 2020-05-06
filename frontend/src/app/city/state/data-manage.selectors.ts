@@ -60,7 +60,7 @@ export class DataManageSelectors {
 
     }
 
-    static getHierarchySlice(commitIndex: number) {
+    static getHierarchySlice(commitIndex: number): (h, p) => Hierarchy {
         return createCachedSelector('getHierarchySlice', createSelector(
             [this.getHierarchy(commitIndex), RepositoryState.getRootPath], (hierarchy, path: string) => {
                 if (path === '') {
@@ -85,7 +85,7 @@ export class DataManageSelectors {
 
     }
 
-    static getTreeItems(commitIndex: number) {
+    static getTreeItems(commitIndex: number): (e) => ItemNode[] {
         return createCachedSelector('getTreeItems', createSelector(
             [this.getHierarchySlice(commitIndex)], hierarchy => createTree(hierarchy)), commitIndex
         )

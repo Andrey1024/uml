@@ -1,4 +1,4 @@
-import { InjectionToken, NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CanvasVisualizerComponent } from './components/canvas-visualizer/canvas-visualizer.component';
 import { ReactiveFormsModule } from '@angular/forms';
