@@ -1,12 +1,11 @@
 <div class="add-commit-container" fxLayout="column">
     <h3 class="add-commit-title">Добавить состояние</h3>
     <mat-divider></mat-divider>
-    <cdk-virtual-scroll-viewport fxFlex="1 0 auto" class="list-container" [itemSize]="itemSize">
+    <cdk-virtual-scroll-viewport fxFlex="1 0 auto" class="list-container" [itemSize]="72">
         <mat-action-list>
-            <ng-container *cdkVirtualFor="let group of grouped">
-                <div mat-subheader>{{group[0] | date : "longDate"}}</div>
-                <button *ngFor="let commit of group[1]"
-                        [disabled]="loaded.includes(commit) || loading.includes(commit)" mat-list-item
+            <ng-container *cdkVirtualFor="let commit of commits; let i = index">
+                <div *ngIf="dateIndices.includes(i)" mat-subheader>{{commit.date | date : "longDate"}}</div>
+                <button [disabled]="loaded.includes(commit) || loading.includes(commit)" mat-list-item
                         (click)="load.emit(commit)">
                     <h3 matLine>{{ commit.shortMessage }}</h3>
                     <p matLine>{{ commit.author.name }}</p>

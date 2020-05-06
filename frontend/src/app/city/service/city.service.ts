@@ -108,13 +108,10 @@ export class CityService implements LayoutService {
             mesh.matrixWorldNeedsUpdate = true;
             mesh.receiveShadow = true;
             mesh.castShadow = true;
-            mesh.userData = <UserData> {
-                width: props.size + this.padding * 2,
-                length: props.size + this.padding * 2,
-                lifeRatio: node.lifeRatio,
+            mesh.userData = <Partial<UserData>> {
                 name: node.fullPath,
-                height: offset,
-                data: node
+                data: node,
+                author: { email: authors[i].author, count: authors[i].count }
             };
             result.add(mesh);
             offset += height;

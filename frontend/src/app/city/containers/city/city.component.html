@@ -5,7 +5,7 @@
            [active]="(selectedLayout$ | async) === layout">{{ layout }}</a>
     </nav>
     <mat-sidenav-container fxFlex="1 0 auto">
-        <mat-sidenav #commits class="commits-sidenav" [fixedInViewport]="true" [fixedTopGap]="64">
+        <mat-sidenav #commits class="commits-sidenav" [fixedInViewport]="true" [fixedTopGap]="64" [fixedBottomGap]="0">
             <uml-add-commits [commits]="commits$ | async"
                              [loaded]="loadedCommits$ | async"
                              [loading]="loadingCommits$ | async"
@@ -29,6 +29,7 @@
                             <input matInput [value]="search$ | async" (input)="updateSearch($event.target.value)">
                         </mat-form-field>
                         <uml-tree-visualizer (select)="selectNodes($event)"
+                                             (setRoot)="setPath($event)"
                                              (focus)="focusNode($event)"
                                              [searchString]="search$ | async"
                                              [selected]="selectedNodes$ | async"

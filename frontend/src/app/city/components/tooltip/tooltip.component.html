@@ -1,16 +1,24 @@
 <div class="info">
     <span>Тип:</span>
-    <span>{{ object.type }}</span>
+    <span>{{ types[object.data.type] || object.data.type }}</span>
 </div>
 <div class="info">
     <span>Имя:</span>
-    <span>{{ object.name }}</span>
+    <span>{{ object.data.name }}</span>
 </div>
-<div *ngIf="object.type === 'CLASS' || object.type === 'INTERFACE'" class="info">
+<div *ngIf="object.data.type === 'CLASS' || object.data.type === 'INTERFACE'" class="info">
     <span>Количество методов:</span>
-    <span>{{ object['methodsCount'] }}</span>
+    <span>{{ object.data['methodsCount'] }}</span>
 </div>
-<div *ngIf="object.type === 'CLASS' || object.type === 'INTERFACE'" class="info">
+<div *ngIf="object.data.type === 'CLASS' || object.data.type === 'INTERFACE'" class="info">
     <span>Количество полей:</span>
-    <span>{{ object['attributesCount'] }}</span>
+    <span>{{ object.data['attributesCount'] }}</span>
+</div>
+<div *ngIf="object.author">
+    <span>Автор:</span>
+    <span>{{ object.author.email }}</span>
+</div>
+<div *ngIf="object.author">
+    <span>Колличество коммитов:</span>
+    <span>{{ object.author.count }}</span>
 </div>

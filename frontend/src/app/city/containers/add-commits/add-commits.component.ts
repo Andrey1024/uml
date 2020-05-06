@@ -14,8 +14,7 @@ export class AddCommitsComponent implements OnInit, OnChanges {
     @Output() load = new EventEmitter<Commit>();
 
 
-    grouped;
-    itemSize = 0;
+    dateIndices: number[];
 
     constructor() {
     }
@@ -25,8 +24,15 @@ export class AddCommitsComponent implements OnInit, OnChanges {
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes.commits) {
-            this.grouped = toPairs(groupBy(this.commits, c => new Date(c.date).toDateString()));
-            this.itemSize = (this.grouped.length * 48 + this.commits.length * 72) / this.grouped.length;
+            const dateIndices = [];
+            let date = '';
+            for (let i = 0; i < this.commits.length; i++) {
+                if (this.commits[i].date !== date) {
+                    date = this.commits[i].date;
+                    dateIndices.push(i);
+                }
+            }
+            this.dateIndices = dateIndices;
         }
     }
 }

@@ -109,6 +109,11 @@ export class StreetsService implements LayoutService {
             mesh.matrixWorldNeedsUpdate = true;
             mesh.receiveShadow = true;
             mesh.castShadow = true;
+            mesh.userData = <Partial<UserData>> {
+                name: node.fullPath,
+                data: node,
+                author: { email: authors[i].author, count: authors[i].count }
+            };
             result.add(mesh);
             offset += height;
         }

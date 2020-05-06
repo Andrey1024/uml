@@ -35,20 +35,11 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
     @Output() focus = new EventEmitter<string>();
 
     flatNodeMap = new Map<ItemFlatNode, ItemNode>();
-
-    /** Map from nested node to flattened node. This helps us to keep the same object for selection */
     nestedNodeMap = new Map<ItemNode, ItemFlatNode>();
-
-    /** A selected parent node to be inserted */
-    selectedParent: ItemFlatNode | null = null;
-
     treeControl: FlatTreeControl<ItemFlatNode>;
-
     treeFlattener: MatTreeFlattener<ItemNode, ItemFlatNode>;
-
     dataSource: MatTreeFlatDataSource<ItemNode, ItemFlatNode>;
-
-    private selectedNodes: Set<string>;
+    selectedNodes: Set<string>;
 
     /** The selection for checklist */
 
@@ -65,6 +56,7 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
 
     private deselectNodes(...nodes: ItemFlatNode[]) {
         nodes.forEach(name => this.selectedNodes.delete(name.item));
+
     }
 
     private toggleSelection(...nodes: ItemFlatNode[]) {
@@ -80,19 +72,34 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
     isNodeSatisfySearch(node: ItemFlatNode) {
         if (node.expandable) {
             const descendants = this.treeControl.getDescendants(node);
-             return descendants.some(n => this.isNodeSatisfySearch(n));
+            return descendants.some(n => this.isNodeSatisfySearch(n));
         }
         return node.label.toLowerCase().includes(this.searchString.toLowerCase())
     }
 
+    expandFiltered(node: ItemFlatNode) {
+        if (node.expandable) {
+            const descendants = this.treeControl.getDescendants(node);
+            if (descendants.map(n => this.expandFiltered(n)).some(e => e)) {
+                this.treeControl.expand(node);
+                return true;
+            }
+            return false;
+        }
+        return this.isNodeSatisfySearch(node);
+    }
+
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes.data || changes.search) {
+        if (changes.data) {
             this.dataSource.data = this.data;
+        }
+        if (changes.data || changes.searchString) {
+            this.data.forEach(i => this.expandFiltered(this.nestedNodeMap.get(i)));
         }
     }
 
+
     ngOnInit(): void {
-        this.treeControl.expandAll();
     }
 
     getLevel = (node: ItemFlatNode) => node.level;

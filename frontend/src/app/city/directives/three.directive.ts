@@ -273,7 +273,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
             }
             this.intersected['savedColor'] = this.intersected['material'].color.getHex();
             this.intersected['material'].color.setHex(0xff0000);
-            this.tooltipComponent.instance.object = this.intersected.userData.data;
+            this.tooltipComponent.instance.object = this.intersected.userData;
             this.tooltipOverlay.updatePosition();
         } else {
             this.tooltipOverlay.detach();

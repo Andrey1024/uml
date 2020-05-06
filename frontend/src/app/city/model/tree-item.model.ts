@@ -1,4 +1,4 @@
-export class ItemNode {
+export class  ItemNode {
     constructor(public item: string, public label: string, public children: ItemNode[]) {
     }
 

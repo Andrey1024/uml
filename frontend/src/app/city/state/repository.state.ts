@@ -1,17 +1,15 @@
 import { Action, createSelector, Selector, State, StateContext, Store } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
 import { tap } from "rxjs/operators";
-import { Hierarchy } from "../model/hierarchy.model";
 import { CommitState } from "../model/server-model/commit-state.model";
 import { Injectable } from "@angular/core";
-import { ItemNode } from "../model/tree-item.model";
 import { Element } from "../model/server-model/element";
 import { CommitsState, CommitsStateModel, Load } from "./commits.state";
-import { insertItem, patch, removeItem } from "@ngxs/store/operators";
-import { keyBy, mapValues, set } from "lodash-es";
+import { iif, insertItem, patch, removeItem } from "@ngxs/store/operators";
+import { keyBy, map, mapValues } from "lodash-es";
 import { Author, Commit } from "../model/server-model/commit.model";
 import { DisplayOptions } from "../service/layout.service";
-import { DataManageSelectors } from "./data-manage.selectors";
+import { createCachedSelector } from "../utils/cached-selector";
 
 export class LoadState {
     static readonly type = '[Repository] load commit state';
@@ -44,7 +42,7 @@ export class SelectSourceRoot {
 export class SetRootPath {
     static readonly type = '[Repository] set root';
 
-    constructor(public rootPath: string) {
+    constructor(public path: string) {
     }
 }
 
@@ -92,12 +90,30 @@ export interface RepositoryStateModel {
 }
 
 function getDiff(obj1: Element, obj2: Element): Partial<Element> {
-    return Object.keys(obj2).reduce((newVal, key) => {
-        if (obj2[key] !== obj1[key]) {
-            newVal[key] = obj2[key];
+    const oddFields: Array<keyof Element> = ['lifeSpan', "lifeRatio"];
+    if (!obj1) {
+        return obj2;
+    }
+    const diff = {};
+    for (let key of <Array<keyof Element>> (Object.keys(obj2))) {
+        if (oddFields.includes(key)) {
+            continue;
         }
-        return newVal;
-    }, {});
+        if (key === 'authors') {
+            const authorsDiff: { [email: string]: number } = {};
+            for (let author of Object.keys(obj2.authors)) {
+                if (obj1.authors[author] !== obj2.authors[author]) {
+                    authorsDiff[author] = obj2.authors[author];
+                }
+            }
+            if (Object.keys(authorsDiff).length > 0) {
+                diff[key] = authorsDiff;
+            }
+        } else if (obj2[key] !== obj1[key]) {
+            diff[key] = obj2[key];
+        }
+    }
+    return diff;
 }
 
 @State<RepositoryStateModel>({
@@ -181,87 +197,51 @@ export class RepositoryState {
     }
 
 
-    private static getElementsAtCommitIndexHash = new Map<number, any>();
-
-    static getElementsAtCommitIndex(index: number) {
-        if (!this.getElementsAtCommitIndexHash.has(index)) {
-            this.getElementsAtCommitIndexHash.set(index, createSelector(
-                [RepositoryState.getElements, RepositoryState.getLoadedCommitNames],
-                (elements, commits) => mapValues(elements, el => el[commits[index]] || null)));
-        }
-        return this.getElementsAtCommitIndexHash.get(index);
+    static getElementsAtCommitIndex(commitIndex: number) {
+        return createCachedSelector(
+            'getElementsAtCommitIndex',
+            createSelector([RepositoryState.getElements, RepositoryState.getLoadedCommitNames],
+                (elements, commits) => mapValues(elements, el => el[commits[commitIndex]] || null)),
+            commitIndex
+        );
     }
-
-    private static getCommitElementsImmutableHash = new Map<number, any>();
 
     static getCommitElementsImmutable(commitIndex: number) {
-        if (!this.getCommitElementsImmutableHash.has(commitIndex)) {
-            if (commitIndex === -1) {
-                this.getCommitElementsImmutableHash.set(commitIndex, createSelector([], () => ({})));
-            } else if (commitIndex === 0) {
-                this.getCommitElementsImmutableHash.set(commitIndex, createSelector([this.getElementsAtCommitIndex(0)], (elements) => {
-                    return mapValues(elements, el => el === null ? null : ({ ...el, lifeSpan: 1, lifeRatio: 1 }))
-                }));
-            } else {
-                this.getCommitElementsImmutableHash.set(commitIndex, createSelector([
-                    this.getCommitElementsImmutable(commitIndex - 1),
-                    this.getElementsAtCommitIndex(commitIndex)], (previous, changes) => {
-                    return mapValues(previous, (el, path) => {
-                        if (changes[path] === null) {
-                            return null;
-                        }
-                        if (el === null) {
-                            return { ...changes[path], lifeSpan: 1, lifeRatio: 1 / (commitIndex + 1) };
-                        } else {
-                            return {
-                                ...el, ...changes[path],
-                                lifeSpan: el.lifeSpan + 1,
-                                lifeRatio: (el.lifeSpan + 1) / (commitIndex + 1)
-                            };
-                        }
-                    })
-                }));
-            }
+        if (commitIndex === -1) {
+            return createCachedSelector('getCommitElementsImmutable', createSelector([], () => ({})), commitIndex);
+        } else if (commitIndex === 0) {
+            return createCachedSelector('getCommitElementsImmutable', createSelector([this.getElementsAtCommitIndex(0)], (elements) => {
+                return mapValues(elements, el => el === null ? null : ({ ...el, lifeSpan: 1, lifeRatio: 1 }))
+            }), commitIndex);
+        } else {
+            return createCachedSelector('getCommitElementsImmutable', createSelector([
+                this.getCommitElementsImmutable(commitIndex - 1),
+                this.getElementsAtCommitIndex(commitIndex)], (previous, changes) => {
+                return mapValues(previous, (el, path) => {
+                    if (changes[path] === null) {
+                        return null;
+                    }
+                    if (el === null) {
+                        return { ...changes[path], lifeSpan: 1, lifeRatio: 1 / (commitIndex + 1) };
+                    } else {
+                        return {
+                            ...el, ...changes[path],
+                            authors: changes.authors ? { ...el.authors, ...changes.authors } : el.authors,
+                            lifeSpan: el.lifeSpan + 1,
+                            lifeRatio: (el.lifeSpan + 1) / (commitIndex + 1)
+                        };
+                    }
+                })
+            }), commitIndex);
         }
-        return this.getCommitElementsImmutableHash.get(commitIndex);
     }
 
-
-    // @Selector([RepositoryState.getElements, RepositoryState.getSelectedCommit, RepositoryState.getLoadedCommits, RepositoryState.getSelectedAuthors])
-    // static getCommitElements(data, commit, commits, authorEmails: string[]): Element[] {
-    //     if (commit == null) return [];
-    //     const commitsBefore = [];
-    //     let i = 0;
-    //     do {
-    //         commitsBefore.push(commits[i])
-    //     } while (commits[i++].name !== commit);
-    //     return Object.keys(data).filter(key => !!data[key][commit]).map(path => {
-    //         const lifeSpan = commitsBefore.filter(c => !!data[path][c.name]).length / commitsBefore.length;
-    //         const authors = mapValues(data[path][commit].authors, (val, key) => authorEmails.includes(key) ? val : 0);
-    //         return ({
-    //             ...data[path][commit],
-    //             lifeSpan,
-    //             authors
-    //         })
-    //     });
-    // }
-
-    // @Selector([RepositoryState.getCommitElements])
-    // static getSourceRoots(elements: Element[]): string[] {
-    //     const roots = new Set<string>();
-    //     elements.forEach(el => roots.add(el.sourceRoot));
-    //     return [...roots];
-    // }
-
-
-    //
-    //
-    // @Selector([RepositoryState.getCommitElements, RepositoryState.getRootPath, RepositoryState.getSourceRoot])
-    // static getFilteredElements(elements: Element[], path: string, sourceRoot: string): Element[] {
-    //     return elements
-    //         .filter(element => element.fullPath.startsWith(path))
-    //         .filter(element => sourceRoot === '' ? true : element.sourceRoot === sourceRoot);
-    // }
+    static getCommitsDiff(first: number, second: number) {
+        return createSelector([
+            this.getCommitElementsImmutable(second),
+            this.getCommitElementsImmutable(first)
+        ], (d1, d2) => getDiff(d1, d2));
+    }
 
 
     @Selector([RepositoryState.getSelectedCommit, CommitsState.getAllCommits, CommitsState.getAuthorsByEmail])
@@ -293,6 +273,7 @@ export class RepositoryState {
         return state.highLight;
     }
 
+
     constructor(private http: HttpClient, private store: Store) {
     }
 
@@ -309,15 +290,15 @@ export class RepositoryState {
                 const newCommit = commits.byId[commit];
                 const newIndex = loadedCommits.findIndex(c => new Date(commits.byId[c].date) > new Date(newCommit.date));
                 const previous = newIndex > 0
-                    ? this.store.selectSnapshot(RepositoryState.getCommitElementsImmutable(newIndex - 1)) : {};
+                    ? this.store.selectSnapshot(RepositoryState.getCommitElementsImmutable(newIndex - 1)) : null;
                 const next = newIndex !== -1
                     ? this.store.selectSnapshot(RepositoryState.getCommitElementsImmutable(newIndex)) : null;
 
                 const newData = { ...data };
                 for (const path of Object.keys(current)) {
-                    newData[path] = data[path] || {};
-                    newData[path] = { ...newData[path], [commit]: getDiff(previous[path] || {}, current[path]) };
-                    if (newIndex !== -1) {
+                    newData[path] = data[path] ? { ...data[path] } : {};
+                    newData[path][commit] = previous === null ? current[path] : getDiff(previous[path], current[path]);
+                    if (next !== null && next[path]) {
                         newData[path][loadedCommits[newIndex]] = getDiff(current[path], next[path] || {});
                     }
                 }
@@ -328,15 +309,14 @@ export class RepositoryState {
                     commit: c => c === null ? commit : c
                 }))
             }),
-            tap(result => {
-                // if (this.store.selectSnapshot(RepositoryState.getLoadedCommitNames).length === 1) {
-                //     const elements = this.store.selectSnapshot(RepositoryState.getFilteredElements);
-                //     const allNodes = new Set([...map(elements, 'fullPath'), ...map(elements, 'parentPackage')]);
-                //     ctx.setState(patch({
-                //         selectedAuthors: map(this.store.selectSnapshot(RepositoryState.getAuthorsWithCount), 'author.email'),
-                //         selectedNodes: [...allNodes]
-                //     }))
-                // }
+            tap(({ data }) => {
+                if (this.store.selectSnapshot(RepositoryState.getLoadedCommitNames).length === 1) {
+                    const allNodes = new Set([...map(data, 'fullPath'), ...map(data, 'parentPackage')]);
+                    ctx.setState(patch({
+                        selectedAuthors: map(this.store.selectSnapshot(RepositoryState.getAuthorsWithCount), 'author.email'),
+                        selectedNodes: [...allNodes]
+                    }))
+                }
             })
         );
     }
@@ -374,8 +354,8 @@ export class RepositoryState {
     }
 
     @Action(SetRootPath)
-    setRoot(ctx: StateContext<RepositoryStateModel>, { rootPath }: SetRootPath) {
-        // ctx.patchState({ rootPath });
+    setRoot(ctx: StateContext<RepositoryStateModel>, { path }: SetRootPath) {
+        ctx.setState(patch({ path: iif(p => p === path, '', path) }));
     }
 
     @Action(Focus)

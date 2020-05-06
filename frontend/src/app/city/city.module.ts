@@ -37,6 +37,7 @@ import { MatDialogModule } from "@angular/material/dialog";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import * as THREE from 'three';
+import { MatSnackBarModule } from "@angular/material/snack-bar";
 
 
 @NgModule({
@@ -63,6 +64,7 @@ import * as THREE from 'three';
         MatChipsModule,
         MatListModule,
         MatProgressSpinnerModule,
+        MatSnackBarModule,
         RouterModule.forChild([
             { path: "", component: RepositoriesPageComponent },
             { path: "repository/:name", component: CityComponent }]),

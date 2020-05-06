@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
-import { Select, Store } from "@ngxs/store";
+import { Actions, ofAction, ofActionDispatched, Select, Store } from "@ngxs/store";
 import { BehaviorSubject, Observable } from "rxjs";
 import { Author, Commit } from "../../model/server-model/commit.model";
 import { ActivatedRoute } from "@angular/router";
@@ -11,15 +11,17 @@ import {
     SelectAuthors,
     SelectCommit,
     SelectNodes,
-    SelectSourceRoot,
+    SelectSourceRoot, SetRootPath,
     UpdateSearch
 } from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
 import { Hierarchy } from "../../model/hierarchy.model";
 import { DisplayOptions, LayoutService } from "../../service/layout.service";
 import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/canvas-visualizer.component";
-import { switchMap } from "rxjs/operators";
+import { switchMap, tap } from "rxjs/operators";
 import { DataManageSelectors } from "../../state/data-manage.selectors";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { ActionContext } from "@ngxs/store/src/actions-stream";
 
 @Component({
     selector: 'uml-city',
@@ -56,9 +58,8 @@ export class CityComponent implements OnInit {
         switchMap(i => this.store.select(DataManageSelectors.getTreeItems(i)))
     );
 
-    // @Select(RepositoryState.getHierarchy)
     hierarchy$: Observable<Hierarchy> = this.commitIndex$.pipe(
-        switchMap(i => this.store.select(DataManageSelectors.getHierarchy(i)))
+        switchMap(i => this.store.select(DataManageSelectors.getHierarchySlice(i)))
     );
 
     @Select(RepositoryState.getSelectedNodes)
@@ -70,7 +71,6 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getSelectedAuthors)
     selectedAuthors$: Observable<string[]>;
 
-    // @Select(RepositoryState.getSourceRoots)
     sourceRoots$: Observable<any> = this.commitIndex$.pipe(
         switchMap(i => this.store.select(DataManageSelectors.getSourceRoots(i)))
     );
@@ -92,8 +92,22 @@ export class CityComponent implements OnInit {
 
     constructor(private store: Store,
                 private route: ActivatedRoute,
+                private snackBar: MatSnackBar,
+                private actions: Actions,
                 @Inject(LayoutService) private layouts: LayoutService[]) {
         this.selectedLayout$.next(layouts[0].name);
+        this.actions.pipe(
+            ofAction(LoadState),
+            tap(() => {
+                const loading = this.store.selectSnapshot(RepositoryState.getLoadingCommits);
+                if (loading.length > 0) {
+                    this.snackBar.open(`Выполняется загрузка ${loading.length} версий`, null,
+                        { horizontalPosition: "end", verticalPosition: "top" });
+                } else {
+                    this.snackBar.dismiss();
+                }
+            })
+        ).subscribe();
     }
 
     ngOnInit(): void {
@@ -125,6 +139,10 @@ export class CityComponent implements OnInit {
 
     selectAuthorsView(showAuthors: boolean) {
         this.store.dispatch(new AuthorView(showAuthors));
+    }
+
+    setPath(path: string) {
+        this.store.dispatch(new SetRootPath(path));
     }
 
     updateSearch(search: string) {

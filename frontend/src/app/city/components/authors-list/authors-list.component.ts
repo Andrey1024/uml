@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output
 import { Author } from "../../model/server-model/commit.model";
 import { SelectionModel } from "@angular/cdk/collections";
 import { MatListOption } from "@angular/material/list";
+import { map } from "lodash-es";
 
 @Component({
     selector: 'uml-authors-list',
@@ -23,6 +24,14 @@ export class AuthorsListComponent implements OnInit {
     }
 
     ngOnInit(): void {
+    }
+
+    areAllSelected(): boolean {
+        return this.authors.every(a => this.selected.includes(a.author.email));
+    }
+
+    toggleAll() {
+        this.select.emit(this.areAllSelected() ? [] : map(this.authors, 'author.email'));
     }
 
     onSelect(options: SelectionModel<MatListOption>) {
