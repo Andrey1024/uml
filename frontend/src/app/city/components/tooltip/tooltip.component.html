@@ -14,6 +14,10 @@
     <span>Количество полей:</span>
     <span>{{ object.data['attributesCount'] }}</span>
 </div>
+<div *ngIf="object.data.type !== 'PACKAGE'" class="info">
+    <span>Количество строк:</span>
+    <span>{{ object.data['numberOfLines'] }}</span>
+</div>
 <div *ngIf="object.author">
     <span>Автор:</span>
     <span>{{ object.author.email }}</span>

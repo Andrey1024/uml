@@ -2,12 +2,9 @@ import { Injectable } from '@angular/core';
 import * as THREE from 'three';
 import { DisplayOptions, LayoutService } from './layout.service';
 import { map } from 'lodash-es';
-import { Overlay } from '@angular/cdk/overlay';
-import { FontService } from './font.service';
 import { Hierarchy } from "../model/hierarchy.model";
 import { Element } from "../model/server-model/element";
 import { Grid } from "../model/grid.model";
-import { NodeModel } from "../model/server-model/node.model";
 import { Store } from "@ngxs/store";
 import { CommitsState } from "../state/commits.state";
 
@@ -55,10 +52,13 @@ export class CityService implements LayoutService {
     }
 
 
-    private process(hierarchy: any, options: DisplayOptions, name: string = null): THREE.Object3D {
+    private process(hierarchy: any, options: DisplayOptions, name: string = null, depth = 1): THREE.Object3D {
         return hierarchy.type
             ? options.showAuthors ? this.createAuthorMesh(hierarchy, options.selectedAuthors) : this.createElementMesh(hierarchy)
-            : this.createPackageMesh(map(hierarchy, (v, k) => this.process(v, options, name ? `${name}.${k}` : k)), name);
+            : this.createPackageMesh(
+                map(hierarchy, (v, k) => this.process(v, options, name ? `${name}.${k}` : k, depth + 1)),
+                name, depth
+            );
     }
 
     private getElementProps(el: Element): { size: number, height: number } {
@@ -76,7 +76,7 @@ export class CityService implements LayoutService {
         }
     }
 
-    private createAuthorMesh(node: NodeModel, selectedAuthors: string[]): THREE.Object3D {
+    private createAuthorMesh(node: Element, selectedAuthors: string[]): THREE.Object3D {
         const props = this.getElementProps(node as Element);
         const result = new THREE.Group();
         const authors = selectedAuthors
@@ -132,7 +132,7 @@ export class CityService implements LayoutService {
 
     private createElementMesh(node: Element): THREE.Object3D {
         const props = this.getElementProps(node);
-        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), node.lifeRatio);
+        const color = new THREE.Color("yellow").lerp(new THREE.Color("#BF3030"), node.lifeRatio);
         const material = new THREE.MeshPhongMaterial({
             color, side: THREE.DoubleSide
         });
@@ -166,7 +166,7 @@ export class CityService implements LayoutService {
         return mesh;
     }
 
-    private createPackageMesh(objects: THREE.Object3D[], name: string): THREE.Object3D {
+    private createPackageMesh(objects: THREE.Object3D[], name: string, depth: number): THREE.Object3D {
         const children = [...objects.sort((a, b) => {
             if (a.userData.length < b.userData.length) {
                 return 1;
@@ -187,7 +187,7 @@ export class CityService implements LayoutService {
         const packageGroup = grid.finalize();
         const packageSize = grid.dimensions;
 
-        const color = new THREE.Color("yellow").lerp(new THREE.Color("blue"), lifeRatio);
+        const color = new THREE.Color(`hsl(240, 100%, ${100 - depth * 10}%)`);
         const material = new THREE.MeshPhongMaterial({ color });
         const geometry = name === null
             ? new THREE.PlaneGeometry(packageSize.x, packageSize.z).rotateX(-Math.PI / 2)

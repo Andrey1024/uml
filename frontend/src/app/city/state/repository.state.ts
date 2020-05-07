@@ -1,7 +1,7 @@
 import { Action, createSelector, Selector, State, StateContext, Store } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
 import { tap } from "rxjs/operators";
-import { CommitState } from "../model/server-model/commit-state.model";
+import { Project } from "../model/server-model/Project";
 import { Injectable } from "@angular/core";
 import { Element } from "../model/server-model/element";
 import { CommitsState, CommitsStateModel, Load } from "./commits.state";
@@ -10,6 +10,7 @@ import { keyBy, map, mapValues } from "lodash-es";
 import { Author, Commit } from "../model/server-model/commit.model";
 import { DisplayOptions } from "../service/layout.service";
 import { createCachedSelector } from "../utils/cached-selector";
+import { InterfaceModel } from "../model/server-model/interface.model";
 
 export class LoadState {
     static readonly type = '[Repository] load commit state';
@@ -89,16 +90,26 @@ export interface RepositoryStateModel {
     highLight: string;
 }
 
+function areListsEqual(arr1: string[], arr2: string[]) {
+    return arr1.length === arr2.length && arr2.every(i => arr1.includes(i));
+}
+
 function getDiff(obj1: Element, obj2: Element): Partial<Element> {
-    const oddFields: Array<keyof Element> = ['lifeSpan', "lifeRatio"];
+    const oddFields = ['lifeSpan', "lifeRatio"];
     if (!obj1) {
         return obj2;
     }
     const diff = {};
-    for (let key of <Array<keyof Element>> (Object.keys(obj2))) {
+    for (let key of (Object.keys(obj2))) {
         if (oddFields.includes(key)) {
             continue;
         }
+        if (key === 'implementedTypes' || key === 'extendedTypes') {
+            if (!areListsEqual(obj1[key], obj2[key])) {
+                diff[key] = obj2[key];
+            }
+        }
+
         if (key === 'authors') {
             const authorsDiff: { [email: string]: number } = {};
             for (let author of Object.keys(obj2.authors)) {
@@ -282,7 +293,7 @@ export class RepositoryState {
         const name = this.store.selectSnapshot(CommitsState.getRepositoryName);
         ctx.setState(patch({ loadingCommits: insertItem(commit) }));
 
-        return this.http.get<CommitState>(`/api/repository/${name}/${commit}`).pipe(
+        return this.http.get<Project>(`/api/repository/${name}/${commit}`).pipe(
             tap(result => {
                 const { loadedCommits, data } = ctx.getState();
                 const current = keyBy(result.data, 'fullPath');

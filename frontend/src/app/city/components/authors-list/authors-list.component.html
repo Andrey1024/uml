@@ -1,5 +1,5 @@
 <button mat-button class="toggle-all" (click)="toggleAll()">
-    {{ areAllSelected() ? 'Снять выделение' : 'Выбрать всех' }}</button>
+    {{ areAllSelected() ? 'СНЯТЬ ВЫДЕЛЕНИЕ' : 'ВЫБРАТЬ ВСЕ' }}</button>
 <mat-selection-list (selectionChange)="onSelect($event.source.selectedOptions)">
     <mat-list-option *ngFor="let author of authors"
                      [value]="author.author.email"

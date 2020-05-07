@@ -2,8 +2,8 @@ package ru.avlasov.web;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.springframework.web.bind.annotation.*;
-import ru.avlasov.ProjectParser;
-import ru.avlasov.reverse.model.Project;
+import ru.avlasov.RepositoryController;
+import ru.avlasov.parser.model.Project;
 import ru.avlasov.web.responses.Commit;
 import ru.avlasov.web.responses.CreateRequest;
 import ru.avlasov.web.responses.RepositoryInfo;
@@ -14,9 +14,9 @@ import java.util.List;
 @RestController
 public class UmlController {
 
-    private final ProjectParser parser;
+    private final RepositoryController parser;
 
-    public UmlController(ProjectParser parser) {
+    public UmlController(RepositoryController parser) {
         this.parser = parser;
     }
 

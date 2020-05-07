@@ -2,9 +2,8 @@ import { Injectable } from '@angular/core';
 import { DisplayOptions, LayoutService } from './layout.service';
 import * as THREE from 'three';
 import { Hierarchy } from "../model/hierarchy.model";
-import { first, map } from "lodash-es";
+import { map } from "lodash-es";
 import { Element } from "../model/server-model/element";
-import { NodeModel } from "../model/server-model/node.model";
 import { Store } from "@ngxs/store";
 import { CommitsState } from "../state/commits.state";
 
@@ -77,8 +76,8 @@ export class StreetsService implements LayoutService {
         }
     }
 
-    private createAuthorMesh(node: NodeModel, selectedAuthors: string[]): THREE.Object3D {
-        const props = this.getElementProps(node as Element);
+    private createAuthorMesh(node: Element, selectedAuthors: string[]): THREE.Object3D {
+        const props = this.getElementProps(node);
         const result = new THREE.Group();
         const authors = selectedAuthors
             .map(key => ({ author: key, count: node.authors[key] }))
@@ -133,7 +132,7 @@ export class StreetsService implements LayoutService {
 
     private createElementMesh(node: Element): THREE.Object3D {
         const props = this.getElementProps(node);
-        const color = new THREE.Color('green');
+        const color = new THREE.Color("yellow").lerp(new THREE.Color("#BF3030"), node.lifeRatio);
         const material = new THREE.MeshPhongMaterial({
             color, side: THREE.DoubleSide
         });

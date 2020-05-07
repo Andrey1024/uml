@@ -69,6 +69,13 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
         });
     }
 
+    highLight(label: string) {
+        if (this.searchString !== '') {
+            return label.replace(new RegExp(this.searchString, 'gi'), '<mark>$&</mark>');
+        }
+        return label;
+    }
+
     isNodeSatisfySearch(node: ItemFlatNode) {
         if (node.expandable) {
             const descendants = this.treeControl.getDescendants(node);

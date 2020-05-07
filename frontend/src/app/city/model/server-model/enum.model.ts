@@ -1,6 +1,6 @@
-import { NodeModel } from "./node.model";
+import { ElementModel } from "./element.model";
 
-export interface EnumModel extends NodeModel {
+export interface EnumModel extends ElementModel {
     type: 'ENUM';
     fieldsNumber: number;
 }
