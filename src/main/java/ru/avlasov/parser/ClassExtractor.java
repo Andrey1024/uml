@@ -138,6 +138,8 @@ public class ClassExtractor {
                 node.setSuperClass(declaration.getExtendedTypes(0).getNameAsString());
             }
         }
+        node.setMethodsCount(resolved.getDeclaredMethods().size());
+        node.setAttributesCount(resolved.getDeclaredFields().size());
 
         return node;
     }
@@ -153,6 +155,8 @@ public class ClassExtractor {
                 node.getImplementedTypes().add(impl.getNameAsString());
             }
         }
+        node.setMethodsCount(resolved.getDeclaredMethods().size());
+        node.setAttributesCount(resolved.getDeclaredFields().size());
         return node;
     }
 

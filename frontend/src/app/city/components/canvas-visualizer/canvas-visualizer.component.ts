@@ -5,7 +5,7 @@ import {
     Inject,
     Input,
     OnChanges,
-    OnInit,
+    OnInit, SimpleChanges,
     ViewChild
 } from '@angular/core';
 import { DisplayOptions, LayoutService } from '../../service/layout.service';
@@ -43,10 +43,11 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     ngOnInit() {
     }
 
-    ngOnChanges(): void {
-        this.data = this.layouts.find(layout => layout.name === this.layoutName)
-            .place(this.hierarchy, this.displayOptions);
-
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes.hierarchy || changes.displayOptions || changes.layoutName) {
+            this.data = this.layouts.find(layout => layout.name === this.layoutName)
+                .place(this.hierarchy, this.displayOptions);
+        }
     }
 
     ngAfterViewInit() {
