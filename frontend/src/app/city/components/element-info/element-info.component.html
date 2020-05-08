@@ -20,16 +20,16 @@
         </div>
         <div *ngIf="element.implementedTypes && element.implementedTypes.length">
             <span>{{element.type === 'CLASS' ? 'Реализует ' : 'Расширяет '}}</span>
-            <ng-container *ngFor="let impl of element.implementedTypes">
+            <ng-container *ngFor="let impl of element.implementedTypes; let last = last">
                 <span [class.linked-name]="impl.hasLink"
-                      (click)="impl.hasLink && link.emit(impl.link)">{{impl.name}}</span>
+                      (click)="impl.hasLink && link.emit(impl.link)">{{impl.name}}{{last ? '' : ', '}}</span>
             </ng-container>
         </div>
         <div *ngIf="element.implementators && element.implementators.length">
             <span>Реализуется в </span>
-            <ng-container *ngFor="let impl of element.implementators">
+            <ng-container *ngFor="let impl of element.implementators; let last = last">
                 <span class="linked-name"
-                      (click)="link.emit(impl.link)">{{impl.name}}</span>
+                      (click)="link.emit(impl.link)">{{impl.name}}{{last ? '' : ', '}}</span>
             </ng-container>
         </div>
         <ng-container *ngIf="element.type === 'CLASS' || element.type === 'INTERFACE'">

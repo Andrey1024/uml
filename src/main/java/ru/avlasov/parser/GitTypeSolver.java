@@ -126,11 +126,14 @@ public class GitTypeSolver implements TypeSolver {
             // If this is not possible we parse all files
             // We try just in the same package, for classes defined in a file not named as the class itself
             {
-                List<CompilationUnit> compilationUnits = parseDirectory(filePath.substring(0, filePath.lastIndexOf("/") - 1));
-                for (CompilationUnit compilationUnit : compilationUnits) {
-                    Optional<com.github.javaparser.ast.body.TypeDeclaration<?>> astTypeDeclaration = Navigator.findType(compilationUnit, typeName.toString());
-                    if (astTypeDeclaration.isPresent()) {
-                        return SymbolReference.solved(JavaParserFacade.get(this).getTypeDeclaration(astTypeDeclaration.get()));
+                int lastDir = filePath.lastIndexOf("/");
+                if (lastDir != -1) {
+                    List<CompilationUnit> compilationUnits = parseDirectory(filePath.substring(0, filePath.lastIndexOf("/") - 1));
+                    for (CompilationUnit compilationUnit : compilationUnits) {
+                        Optional<com.github.javaparser.ast.body.TypeDeclaration<?>> astTypeDeclaration = Navigator.findType(compilationUnit, typeName.toString());
+                        if (astTypeDeclaration.isPresent()) {
+                            return SymbolReference.solved(JavaParserFacade.get(this).getTypeDeclaration(astTypeDeclaration.get()));
+                        }
                     }
                 }
             }

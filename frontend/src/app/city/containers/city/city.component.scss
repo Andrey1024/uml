@@ -31,7 +31,8 @@
 }
 
 .mat-sidenav.tree-sidenav {
-  width: 400px;
+  min-width: 25%;
+  max-width: 600px;
 
   .mat-form-field {
     width: 100%;

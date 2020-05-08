@@ -114,7 +114,7 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
         if (changes.selectedElement && this.selectedElement && this.scrollable) {
             const index = this.treeControl.dataNodes.findIndex(i => i.item === this.selectedElement);
             if (index !== -1) {
-                this.scrollable.scrollTo({top: index * 30 - 20});
+                this.scrollable.scrollTo({ top: index * 30 - 20 });
             }
         }
     }
