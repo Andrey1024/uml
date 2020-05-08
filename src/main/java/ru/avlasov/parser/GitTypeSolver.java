@@ -9,9 +9,6 @@ import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,19 +61,6 @@ public class GitTypeSolver implements TypeSolver {
         }
     }
 
-    /**
-     * Note that this parse only files directly contained in this directory.
-     * It does not traverse recursively all children directory.
-     * //
-     */
-//    private List<CompilationUnit> parseDirectory(Path srcDirectory) {
-//        return parseDirectory(srcDirectory, false);
-//    }
-//
-//    private List<CompilationUnit> parseDirectoryRecursively(Path srcDirectory) {
-//        return parseDirectory(srcDirectory, true);
-//    }
-//
     private List<CompilationUnit> parseDirectory(String srcDirectory) {
         try {
             return parsedDirectories.get(srcDirectory, () -> {

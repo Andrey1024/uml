@@ -38,6 +38,7 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import * as THREE from 'three';
 import { MatSnackBarModule } from "@angular/material/snack-bar";
+import { ElementInfoComponent } from './components/element-info/element-info.component';
 
 
 @NgModule({
@@ -81,6 +82,7 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
         AuthorsListComponent,
         RepositoriesPageComponent,
         AddRepoDialogComponent,
+        ElementInfoComponent,
     ],
     providers: [
         { provide: RENDERER, useValue: new THREE.WebGLRenderer({ alpha: true }) }

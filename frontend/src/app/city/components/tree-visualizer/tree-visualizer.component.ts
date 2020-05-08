@@ -6,11 +6,13 @@ import {
     OnChanges,
     OnInit,
     Output,
-    SimpleChanges
+    SimpleChanges,
+    ViewChild
 } from '@angular/core';
 import { ItemFlatNode, ItemNode } from "../../model/tree-item.model";
 import { FlatTreeControl } from "@angular/cdk/tree";
 import { MatTreeFlatDataSource, MatTreeFlattener } from "@angular/material/tree";
+import { CdkScrollable } from "@angular/cdk/overlay";
 
 
 @Component({
@@ -20,6 +22,8 @@ import { MatTreeFlatDataSource, MatTreeFlattener } from "@angular/material/tree"
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TreeVisualizerComponent implements OnInit, OnChanges {
+    @ViewChild(CdkScrollable) scrollable: CdkScrollable;
+
     @Input() data: ItemNode[];
 
     @Input() set selected(nodes: string[]) {
@@ -28,11 +32,15 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
 
     @Input() searchString: string;
 
+    @Input() selectedElement: string;
+
     @Output() select = new EventEmitter<string[]>();
 
     @Output() setRoot = new EventEmitter<string>();
 
     @Output() focus = new EventEmitter<string>();
+
+    @Output() details = new EventEmitter<string>();
 
     flatNodeMap = new Map<ItemFlatNode, ItemNode>();
     nestedNodeMap = new Map<ItemNode, ItemFlatNode>();
@@ -102,6 +110,12 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
         }
         if (changes.data || changes.searchString) {
             this.data.forEach(i => this.expandFiltered(this.nestedNodeMap.get(i)));
+        }
+        if (changes.selectedElement && this.selectedElement && this.scrollable) {
+            const index = this.treeControl.dataNodes.findIndex(i => i.item === this.selectedElement);
+            if (index !== -1) {
+                this.scrollable.scrollTo({top: index * 30 - 20});
+            }
         }
     }
 

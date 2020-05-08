@@ -1,0 +1,18 @@
+.linked-name {
+  cursor: pointer;
+}
+
+.mat-card-title-group {
+  overflow: hidden;
+
+
+  .element-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+.mat-card-title-group::ng-deep {
+  & > div {
+    overflow: hidden;
+  }
+}

@@ -1,0 +1,53 @@
+<mat-card>
+    <mat-card-title-group>
+        <mat-card-title class="element-name">{{ element.name }}</mat-card-title>
+        <mat-card-subtitle>{{ types[element.type] }}</mat-card-subtitle>
+    </mat-card-title-group>
+    <mat-card-content fxLayout="column">
+        <div>
+            <span>Пакет </span>
+            <span>{{ element.parentPackage }}</span>
+        </div>
+        <div *ngIf="element.type === 'CLASS'">
+            <span>Расширяет </span>
+            <span [class.linked-name]="element.superClass.hasLink"
+                  (click)="element.superClass.hasLink && link.emit(element.superClass.link)">{{element.superClass.name}}</span>
+        </div>
+        <div *ngIf="element.descendant">
+            <span>Наследуется классом </span>
+            <span class="linked-name"
+                  (click)="link.emit(element.descendant.link)">{{element.descendant.name}}</span>
+        </div>
+        <div *ngIf="element.implementedTypes && element.implementedTypes.length">
+            <span>{{element.type === 'CLASS' ? 'Реализует ' : 'Расширяет '}}</span>
+            <ng-container *ngFor="let impl of element.implementedTypes">
+                <span [class.linked-name]="impl.hasLink"
+                      (click)="impl.hasLink && link.emit(impl.link)">{{impl.name}}</span>
+            </ng-container>
+        </div>
+        <div *ngIf="element.implementators && element.implementators.length">
+            <span>Реализуется в </span>
+            <ng-container *ngFor="let impl of element.implementators">
+                <span class="linked-name"
+                      (click)="link.emit(impl.link)">{{impl.name}}</span>
+            </ng-container>
+        </div>
+        <ng-container *ngIf="element.type === 'CLASS' || element.type === 'INTERFACE'">
+            <div>
+                <span>{{element.methodsCount}} методов</span>
+            </div>
+            <div>
+                <span>{{element.attributesCount}} атрибутов</span>
+            </div>
+        </ng-container>
+        <div *ngIf="element.type === 'ENUM'">
+            <span>{{element.numberOfConstants}} значений</span>
+        </div>
+        <div>
+            <span>{{element.numberOfLines}} строк кода</span>
+        </div>
+    </mat-card-content>
+    <mat-card-actions>
+        <button mat-button (click)="link.emit(null)">ЗАКРЫТЬ</button>
+    </mat-card-actions>
+</mat-card>

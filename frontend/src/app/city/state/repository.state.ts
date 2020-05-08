@@ -1,7 +1,7 @@
 import { Action, createSelector, Selector, State, StateContext, Store } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
 import { tap } from "rxjs/operators";
-import { Project } from "../model/server-model/Project";
+import { Project } from "../model/server-model/project";
 import { Injectable } from "@angular/core";
 import { Element } from "../model/server-model/element";
 import { CommitsState, CommitsStateModel, Load } from "./commits.state";
@@ -70,9 +70,16 @@ export class AuthorView {
 }
 
 export class UpdateSearch {
-    static readonly type = '[Repository] updateSearch';
+    static readonly type = '[Repository] update search';
 
     constructor(public searchString: string) {
+    }
+}
+
+export class SelectDetails {
+    static readonly type = '[Repository] select details';
+
+    constructor(public element: string) {
     }
 }
 
@@ -88,6 +95,7 @@ export interface RepositoryStateModel {
     path: string;
     commit: string;
     highLight: string;
+    selectedDetails: string;
 }
 
 function areListsEqual(arr1: string[], arr2: string[]) {
@@ -140,7 +148,8 @@ function getDiff(obj1: Element, obj2: Element): Partial<Element> {
         commit: null,
         highLight: null,
         showAuthors: false,
-        search: ''
+        search: '',
+        selectedDetails: null
     },
     children: [CommitsState]
 })
@@ -149,6 +158,11 @@ export class RepositoryState {
     @Selector([RepositoryState])
     static areAuthorsShowed(state: RepositoryStateModel): boolean {
         return state.showAuthors;
+    }
+
+    @Selector([RepositoryState])
+    static getSelectedElementName(state: RepositoryStateModel): string {
+        return state.selectedDetails;
     }
 
     @Selector([RepositoryState])
@@ -247,13 +261,56 @@ export class RepositoryState {
         }
     }
 
+    static getSelectedElement(commitIndex: number) {
+        return createSelector(
+            [this.getCommitElementsImmutable(commitIndex), this.getSelectedElementName],
+            (elements: { [path: string]: Element }, name) => {
+                if (name === null || !elements[name]) {
+                    return null;
+                }
+                const result: any = { ...elements[name] };
+                if (result.type === 'CLASS' || result.type === 'INTERFACE') {
+                    result.implementedTypes = result.implementedTypes.map(i => {
+                        const ref = elements[i]
+                        return {
+                            name: ref ? ref.name : i,
+                            hasLink: !!ref, link: ref ? ref.fullPath : null
+                        }
+                    });
+                }
+                if (result.type === 'CLASS') {
+                    const ref = elements[result.superClass];
+                    const child = Object.values(elements)
+                        .filter(e => e !== null).find(e => e.type === "CLASS" && e.superClass === name);
+                    result.superClass = {
+                        name: ref ? ref.name : result.superClass,
+                        hasLink: !!ref,
+                        link: ref ? ref.fullPath : null
+                    };
+                    if (child) {
+                        result.descendant = { name: child.name, link: child.fullPath };
+                    }
+                }
+                if (result.type === 'INTERFACE') {
+                    const children = Object.values(elements).filter(e => e !== null)
+                        .filter(c => (c.type === 'CLASS' || c.type === 'INTERFACE') && c.implementedTypes.includes(name));
+                    if (children.length) {
+                        result.implementators = children.map(e => ({
+                            name: e.name,
+                            hasLink: true, link: e.fullPath
+                        }));
+                    }
+                }
+                return result;
+            });
+    }
+
     static getCommitsDiff(first: number, second: number) {
         return createSelector([
             this.getCommitElementsImmutable(second),
             this.getCommitElementsImmutable(first)
         ], (d1, d2) => getDiff(d1, d2));
     }
-
 
     @Selector([RepositoryState.getSelectedCommit, CommitsState.getAllCommits, CommitsState.getAuthorsByEmail])
     static getAuthorsWithCount(commit: string, commits: Commit[], authorsByEmail): { author: Author, count: number }[] {
@@ -364,6 +421,12 @@ export class RepositoryState {
         ctx.patchState({ search: searchString });
     }
 
+
+    @Action(SelectDetails)
+    selectDetails(ctx: StateContext<RepositoryStateModel>, { element }: SelectDetails) {
+        ctx.patchState({ selectedDetails: element });
+    }
+
     @Action(SetRootPath)
     setRoot(ctx: StateContext<RepositoryStateModel>, { path }: SetRootPath) {
         ctx.setState(patch({ path: iif(p => p === path, '', path) }));
@@ -388,7 +451,8 @@ export class RepositoryState {
             commit: null,
             highLight: null,
             loadingCommits: [],
-            showAuthors: false
+            showAuthors: false,
+            selectedDetails: null
         })
     }
 }

@@ -1,4 +1,4 @@
-<mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+<mat-tree [dataSource]="dataSource" [treeControl]="treeControl" cdkScrollable>
     <mat-tree-node *matTreeNodeDef="let node; when: hasChild" [class.hidden]="!isNodeSatisfySearch(node)"
                    matTreeNodePadding [matTreeNodePaddingIndent]="15">
         <button class="toggle-button" mat-icon-button matTreeNodeToggle>
@@ -8,6 +8,7 @@
         </button>
         <mat-checkbox [checked]="descendantsAllSelected(node)" (change)="packageSelectionToggle(node)"
                       (mouseenter)="focus.emit(node.item)"
+                      (mouseleave)="focus.emit(null)"
                       [indeterminate]="descendantsPartiallySelected(node)">
             <span [innerHTML]="highLight(node.label)"></span>
         </mat-checkbox>
@@ -16,12 +17,19 @@
         </button>
     </mat-tree-node>
 
-    <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle [class.hidden]="!isNodeSatisfySearch(node)"
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle
+                   [class.selected-element]="node.item === selectedElement"
+                   [class.hidden]="!isNodeSatisfySearch(node)"
                    matTreeNodePadding [matTreeNodePaddingIndent]="15">
         <button class="toggle-button" mat-icon-button disabled></button>
-        <mat-checkbox class="checklist-leaf-node" (mouseenter)="focus.emit(node.item)"
+        <mat-checkbox class="checklist-leaf-node"
+                      (mouseenter)="focus.emit(node.item)"
+                      (mouseleave)="focus.emit(null)"
                       [checked]="selectedNodes.has(node.item)" (change)="classSelectionToggle(node)">
             <span [innerHTML]="highLight(node.label)"></span>
         </mat-checkbox>
+        <button mat-icon-button class="crop-button" (click)="details.emit(node.item)">
+            <mat-icon [inline]="true">description</mat-icon>
+        </button>
     </mat-tree-node>
 </mat-tree>

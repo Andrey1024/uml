@@ -20,7 +20,14 @@
   display: none;
 }
 
+.mat-tree-node.selected-element {
+  background: #bbbbbb;
+}
+
 .mat-tree {
   min-width: 300px;
   max-width: 400px;
+
+  height: 100%;
+  overflow: auto;
 }

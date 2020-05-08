@@ -31,6 +31,7 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     @Input() hierarchy: Hierarchy;
     @Input() selected: string[];
     @Input() layoutName: string;
+    @Input() selectedElement: string;
     @Input() displayOptions: DisplayOptions;
 
     data: THREE.Object3D[];

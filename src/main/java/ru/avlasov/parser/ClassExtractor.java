@@ -3,16 +3,16 @@ package ru.avlasov.parser;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
+import com.github.javaparser.resolution.declarations.ResolvedClassDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedEnumDeclaration;
+import com.github.javaparser.resolution.declarations.ResolvedInterfaceDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
@@ -24,9 +24,10 @@ import ru.avlasov.parser.model.EnumNode;
 import ru.avlasov.parser.model.InterfaceNode;
 
 import java.io.InputStream;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ClassExtractor {
     private final ParserConfiguration configuration;
@@ -61,7 +62,7 @@ public class ClassExtractor {
             Map<String, CompilationUnit> cus = compilationUnitMap.get(sourceRoot);
             for (String file : cus.keySet()) {
                 CompilationUnit cu = cus.get(file);
-                for (Element element: Stream.concat(getClasses(cu).stream(), getEnums(cu).stream()).collect(Collectors.toList())) {
+                for (Element element : getAllElements(cu)) {
                     element.setSourceRoot(sourceRoot);
                     element.setFilePath(file);
                     elements.add(element);
@@ -80,92 +81,93 @@ public class ClassExtractor {
         }
     }
 
-    private List<Element>  getClasses(CompilationUnit cu) {
+    private List<Element> getAllElements(CompilationUnit cu) {
         List<Element> elements = new ArrayList<>();
         new VoidVisitorAdapter<Object>() {
+            public void visit(TypeDeclaration<?> declaration) {
+                Element element = createNode(declaration);
+                if (element == null) return;
+                if (declaration.getRange().isPresent()) {
+                    element.setNumberOfLines(declaration.getRange().get().end.line - declaration.getRange().get().begin.line);
+                }
+                elements.add(element);
+            }
+
+            @Override
+            public void visit(EnumDeclaration n, Object arg) {
+                visit(n);
+                super.visit(n, arg);
+            }
+
             @Override
             public void visit(ClassOrInterfaceDeclaration n, Object arg) {
-                ResolvedReferenceTypeDeclaration type = n.resolve();
-                if (type.getPackageName().isEmpty()) return;
-
-                InterfaceNode node = null;
-                if (type.isInterface()) {
-                    node = new InterfaceNode();
-                } else if (type.isClass()) {
-                    node = new ClassNode();
-                }
-
-                List<String> extendedTypes = new ArrayList<>();
-                for (ClassOrInterfaceType extended : n.getExtendedTypes()) {
-                    try {
-                        ResolvedReferenceType ext = extended.resolve();
-                        extendedTypes.add(ext.getQualifiedName());
-                    } catch (UnsolvedSymbolException e) {
-                        System.out.println("");
-                    }
-                }
-                List<String> implementedTypes = new ArrayList<>();
-                for (ClassOrInterfaceType implemented: n.getImplementedTypes()) {
-                    try {
-                        ResolvedReferenceType implementedType = implemented.resolve();
-                        implementedTypes.add(implementedType.getQualifiedName());
-                    } catch (UnsolvedSymbolException e) {
-                        implementedTypes.add(implemented.getNameAsString());
-                    }
-                }
-                if (node != null) {
-                    node.setExtendedTypes(extendedTypes);
-                    node.setImplementedTypes(implementedTypes);
-                    node.setName(type.getName());
-                    node.setParentPackage(type.getPackageName());
-                    node.setFullPath(type.getQualifiedName());
-                    if (n.getRange().isPresent()) {
-                        node.setNumberOfLines(n.getRange().get().end.line - n.getRange().get().begin.line);
-                    }
-                    setFields(n, node);
-                    setMethods(n, node);
-                }
-                elements.add(node);
+                visit(n);
                 super.visit(n, arg);
             }
         }.visit(cu, null);
         return elements;
     }
 
-    private void setFields(ClassOrInterfaceDeclaration clazz, InterfaceNode attributeOwner) {
-        new VoidVisitorAdapter<Object>() {
-            @Override
-            public void visit(FieldDeclaration n, Object arg) {
-                attributeOwner.setAttributesCount(attributeOwner.getAttributesCount() + n.getVariables().size());
-            }
-        }.visit(clazz, null);
+    private Element createNode(TypeDeclaration<?> declaration) {
+        ResolvedReferenceTypeDeclaration resolved = declaration.resolve();
+        if (resolved.isEnum()) {
+            return createEnumNode(resolved.asEnum());
+        } else if (resolved.isClass()) {
+            return createClassNode(declaration.asClassOrInterfaceDeclaration());
+        } else if (resolved.isInterface()) {
+            return createInterfaceNode(declaration.asClassOrInterfaceDeclaration());
+        }
+        return null;
     }
 
-    private void setMethods(ClassOrInterfaceDeclaration clazz, InterfaceNode operationOwner) {
-        new VoidVisitorAdapter<Object>() {
-            @Override
-            public void visit(MethodDeclaration n, Object arg) {
-                operationOwner.setMethodsCount(operationOwner.getMethodsCount() + 1);
+    private ClassNode createClassNode(ClassOrInterfaceDeclaration declaration) {
+        ResolvedClassDeclaration resolved = declaration.resolve().asClass();
+        ClassNode node = new ClassNode();
+        setSharedProperties(resolved, node);
+        for (ClassOrInterfaceType impl : declaration.getImplementedTypes()) {
+            try {
+                node.getImplementedTypes().add(impl.resolve().getQualifiedName());
+            } catch (UnsolvedSymbolException e) {
+                node.getImplementedTypes().add(impl.getNameAsString());
             }
-        }.visit(clazz, null);
+        }
+        try {
+            node.setSuperClass(resolved.getSuperClass().getQualifiedName());
+        } catch (UnsolvedSymbolException e) {
+            if (!declaration.getExtendedTypes().isEmpty()) {
+                node.setSuperClass(declaration.getExtendedTypes(0).getNameAsString());
+            }
+        }
+
+        return node;
     }
 
-    private List<Element> getEnums(CompilationUnit cu) {
-        List<Element> elements = new ArrayList<>();
-        new VoidVisitorAdapter<Object>() {
-            @Override
-            public void visit(EnumDeclaration n, Object arg) {
-                ResolvedEnumDeclaration type = n.resolve();
-                EnumNode enumNode = new EnumNode();
-                enumNode.setName(type.getName());
-                enumNode.setFullPath(type.getQualifiedName());
-                enumNode.setParentPackage(type.getPackageName());
-                if (n.getRange().isPresent()) {
-                    enumNode.setNumberOfLines(n.getRange().get().end.line - n.getRange().get().begin.line);
-                }
-                elements.add(enumNode);
+    private InterfaceNode createInterfaceNode(ClassOrInterfaceDeclaration declaration) {
+        ResolvedInterfaceDeclaration resolved = declaration.resolve().asInterface();
+        InterfaceNode node = new InterfaceNode();
+        setSharedProperties(resolved, node);
+        for (ClassOrInterfaceType impl : declaration.getExtendedTypes()) {
+            try {
+                node.getImplementedTypes().add(impl.resolve().getQualifiedName());
+            } catch (UnsolvedSymbolException e) {
+                node.getImplementedTypes().add(impl.getNameAsString());
             }
-        }.visit(cu, null);
-        return elements;
+        }
+        return node;
     }
+
+    private EnumNode createEnumNode(ResolvedEnumDeclaration declaration) {
+        EnumNode node = new EnumNode();
+        setSharedProperties(declaration, node);
+        node.setNumberOfConstants(declaration.getEnumConstants().size());
+        return node;
+    }
+
+
+    private void setSharedProperties(ResolvedReferenceTypeDeclaration declaration, Element element) {
+        element.setName(declaration.getName());
+        element.setParentPackage(declaration.getPackageName());
+        element.setFullPath(declaration.getQualifiedName());
+    }
+
 }

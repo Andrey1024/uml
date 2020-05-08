@@ -28,6 +28,7 @@ export const RENDERER = new InjectionToken<THREE.Renderer>('renderer');
 export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     @Input('umlThree') objects: THREE.Object3D[] = [];
     @Input() visibleNodes: string[];
+    @Input() highLighted: string;
     @Output() select = new EventEmitter();
 
     tooltipEl: HTMLDivElement;
@@ -52,6 +53,8 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     private intersected: THREE.Object3D | null = null;
 
     private mouse = new THREE.Vector2();
+
+    private highLightedObject: THREE.Object3D;
 
     constructor(@Inject(RENDERER) private renderer,
                 private element: ElementRef<HTMLDivElement>,
@@ -195,6 +198,16 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         if (this.objects && (changes.visibleNodes || changes.objects)) {
             this.objects.forEach(o => this.toggleVisibility(o))
         }
+        if (changes.highLighted) {
+            if (this.highLightedObject && this.highLighted !== this.highLightedObject.name) {
+                this.highLightedObject['material'].color.setHex(this.highLightedObject['savedColor']);
+            }
+            if (this.highLighted) {
+                this.highLightedObject = this.scene.getObjectByName(this.highLighted);
+                this.highLightedObject['savedColor'] = this.highLightedObject['material'].color.getHex();
+                this.highLightedObject['material'].color.setHex(0x39e639);
+            }
+        }
     }
 
     toggleVisibility(obj: THREE.Object3D) {
@@ -278,6 +291,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         } else {
             this.tooltipOverlay.detach();
         }
+
 
         this.renderer.render(this.scene, this.camera);
         if (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight) {

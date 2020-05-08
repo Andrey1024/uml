@@ -1,27 +1,15 @@
 package ru.avlasov.parser.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class InterfaceNode extends Element {
     private int methodsCount;
     private int attributesCount;
-    private List<String> extendedTypes;
-    private List<String> implementedTypes;
+    private final List<String> implementedTypes = new ArrayList<>();
 
     public List<String> getImplementedTypes() {
         return implementedTypes;
-    }
-
-    public void setImplementedTypes(List<String> implementedTypes) {
-        this.implementedTypes = implementedTypes;
-    }
-
-    public List<String> getExtendedTypes() {
-        return extendedTypes;
-    }
-
-    public void setExtendedTypes(List<String> extendedTypes) {
-        this.extendedTypes = extendedTypes;
     }
 
     public int getAttributesCount() {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { Actions, ofAction, Select, Store } from "@ngxs/store";
-import { BehaviorSubject, Observable } from "rxjs";
+import { BehaviorSubject, combineLatest, Observable, of } from "rxjs";
 import { Author, Commit } from "../../model/server-model/commit.model";
 import { ActivatedRoute } from "@angular/router";
 import { CommitsState, Load } from "../../state/commits.state";
@@ -9,7 +9,7 @@ import {
     LoadState,
     RepositoryState,
     SelectAuthors,
-    SelectCommit,
+    SelectCommit, SelectDetails,
     SelectNodes,
     SelectSourceRoot,
     SetRootPath,
@@ -19,9 +19,10 @@ import { ItemNode } from "../../model/tree-item.model";
 import { Hierarchy } from "../../model/hierarchy.model";
 import { DisplayOptions, LayoutService } from "../../service/layout.service";
 import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/canvas-visualizer.component";
-import { switchMap, tap } from "rxjs/operators";
+import { map, switchMap, tap } from "rxjs/operators";
 import { DataManageSelectors } from "../../state/data-manage.selectors";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { Element } from "../../model/server-model/element";
 
 @Component({
     selector: 'uml-city',
@@ -87,8 +88,15 @@ export class CityComponent implements OnInit {
     @Select(RepositoryState.getSearch)
     search$: Observable<string>;
 
+    selectedElement$: Observable<Element> = this.commitIndex$.pipe(
+        switchMap(i => this.store.select(RepositoryState.getSelectedElement(i)))
+    );
+
     layoutNames = this.layouts.map(layout => layout.name);
     selectedLayout$ = new BehaviorSubject<string>(this.layoutNames[0]);
+
+
+
 
     constructor(private store: Store,
                 private route: ActivatedRoute,
@@ -151,5 +159,9 @@ export class CityComponent implements OnInit {
 
     focusNode(node: string) {
         this.canvas.focusOnElement(node);
+    }
+
+    selectElement(name: string) {
+        this.store.dispatch(new SelectDetails(name));
     }
 }

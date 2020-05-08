@@ -4,6 +4,6 @@ export interface ClassModel extends ElementModel {
     type: 'CLASS'
     methodsCount: number;
     attributesCount: number;
-    extendedTypes: string[];
+    superClass: string;
     implementedTypes: string[];
 }

@@ -24,16 +24,26 @@
                 <mat-tab-group class="tree-tab-group" mat-align-tabs="center"
                                (selectedIndexChange)="selectAuthorsView($event == 1)">
                     <mat-tab label="Структура">
-                        <mat-form-field>
-                            <mat-label>Поиск</mat-label>
-                            <input matInput [value]="search$ | async" (input)="updateSearch($event.target.value)">
-                        </mat-form-field>
-                        <uml-tree-visualizer (select)="selectNodes($event)"
-                                             (setRoot)="setPath($event)"
-                                             (focus)="focusNode($event)"
-                                             [searchString]="search$ | async"
-                                             [selected]="selectedNodes$ | async"
-                                             [data]="treeItems$ | async"></uml-tree-visualizer>
+                        <div class="structure-tab-content" fxLayout="column">
+                            <mat-form-field fxFlex="none">
+                                <mat-label>Поиск</mat-label>
+                                <input matInput [value]="search$ | async" (input)="updateSearch($event.target.value)">
+                            </mat-form-field>
+                            <div class="tree-container" fxFlex="1 0 50">
+                                <uml-tree-visualizer (select)="selectNodes($event)"
+                                                     (setRoot)="setPath($event)"
+                                                     (focus)="focusNode($event)"
+                                                     (details)="selectElement($event)"
+                                                     [selectedElement]="(selectedElement$ | async)?.fullPath"
+                                                     [searchString]="search$ | async"
+                                                     [selected]="selectedNodes$ | async"
+                                                     [data]="treeItems$ | async"></uml-tree-visualizer>
+                            </div>
+                            <mat-divider></mat-divider>
+                            <uml-element-info fxFlex="none" *ngIf="selectedElement$ | async as element"
+                                              (link)="selectElement($event)"
+                                              [element]="element"></uml-element-info>
+                        </div>
                     </mat-tab>
                     <mat-tab label="Авторы">
                         <uml-authors-list [authors]="authors$ | async"
@@ -48,6 +58,7 @@
             <uml-canvas-visualizer [hierarchy]="hierarchy$ | async"
                                    [displayOptions]="options$ | async"
                                    [selected]="selectedNodes$ | async"
+                                   [selectedElement]="(selectedElement$ | async)?.fullPath"
                                    [layoutName]="selectedLayout$ | async"></uml-canvas-visualizer>
         </mat-sidenav-content>
 
