@@ -3,7 +3,7 @@ package ru.avlasov.web;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.springframework.web.bind.annotation.*;
 import ru.avlasov.RepositoryController;
-import ru.avlasov.parser.model.Project;
+import ru.avlasov.web.responses.Project;
 import ru.avlasov.web.responses.Commit;
 import ru.avlasov.web.responses.CreateRequest;
 import ru.avlasov.web.responses.RepositoryInfo;

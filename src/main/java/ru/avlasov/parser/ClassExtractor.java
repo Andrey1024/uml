@@ -14,7 +14,6 @@ import com.github.javaparser.resolution.declarations.ResolvedClassDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedEnumDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedInterfaceDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
@@ -55,7 +54,7 @@ public class ClassExtractor {
 
     public List<Element> getElements() {
         for (String sourceRoot : compilationUnitMap.keySet()) {
-            typeSolver.add(new GitTypeSolver(sourceRoot, compilationUnitMap.get(sourceRoot)));
+            typeSolver.add(new ParsedTypeSolver(sourceRoot, compilationUnitMap.get(sourceRoot)));
         }
         List<Element> elements = new ArrayList<>();
         for (String sourceRoot : compilationUnitMap.keySet()) {
@@ -138,8 +137,8 @@ public class ClassExtractor {
                 node.setSuperClass(declaration.getExtendedTypes(0).getNameAsString());
             }
         }
-        node.setMethodsCount(resolved.getDeclaredMethods().size());
-        node.setAttributesCount(resolved.getDeclaredFields().size());
+        node.setMethodsCount(declaration.getMethods().size());
+        node.setAttributesCount(declaration.getFields().size());
 
         return node;
     }
@@ -155,8 +154,8 @@ public class ClassExtractor {
                 node.getImplementedTypes().add(impl.getNameAsString());
             }
         }
-        node.setMethodsCount(resolved.getDeclaredMethods().size());
-        node.setAttributesCount(resolved.getDeclaredFields().size());
+        node.setMethodsCount(declaration.getMethods().size());
+        node.setAttributesCount(declaration.getFields().size());
         return node;
     }
 

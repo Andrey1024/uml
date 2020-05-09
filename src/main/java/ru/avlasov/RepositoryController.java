@@ -16,7 +16,7 @@ import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
 import org.springframework.stereotype.Controller;
 import ru.avlasov.parser.ClassExtractor;
 import ru.avlasov.parser.model.Element;
-import ru.avlasov.parser.model.Project;
+import ru.avlasov.web.responses.Project;
 import ru.avlasov.web.responses.Commit;
 import ru.avlasov.web.responses.RepositoryInfo;
 

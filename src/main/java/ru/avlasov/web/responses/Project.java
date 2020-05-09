@@ -1,4 +1,6 @@
-package ru.avlasov.parser.model;
+package ru.avlasov.web.responses;
+
+import ru.avlasov.parser.model.Element;
 
 import java.util.List;
 

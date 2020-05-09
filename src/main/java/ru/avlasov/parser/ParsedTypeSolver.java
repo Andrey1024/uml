@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-public class GitTypeSolver implements TypeSolver {
+public class ParsedTypeSolver implements TypeSolver {
     private final String srcDir;
     private final Map<String, CompilationUnit> compilationUnitMap;
 
@@ -25,7 +25,7 @@ public class GitTypeSolver implements TypeSolver {
     private final Cache<String, List<CompilationUnit>> parsedDirectories = CacheBuilder.newBuilder().softValues().build();
     private final Cache<String, SymbolReference<ResolvedReferenceTypeDeclaration>> foundTypes = CacheBuilder.newBuilder().softValues().build();
 
-    public GitTypeSolver(String srcDir, Map<String, CompilationUnit> compilationUnitMap) {
+    public ParsedTypeSolver(String srcDir, Map<String, CompilationUnit> compilationUnitMap) {
         this.srcDir = srcDir;
         this.compilationUnitMap = compilationUnitMap;
     }
