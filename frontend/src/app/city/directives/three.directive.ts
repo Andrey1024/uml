@@ -201,6 +201,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         if (changes.highLighted) {
             if (this.highLightedObject && this.highLighted !== this.highLightedObject.name) {
                 this.highLightedObject['material'].color.setHex(this.highLightedObject['savedColor']);
+                this.highLightedObject = null;
             }
             if (this.highLighted) {
                 this.highLightedObject = this.scene.getObjectByName(this.highLighted);
@@ -228,7 +229,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
 
     resize() {
         const width = this.element.nativeElement.clientWidth, height = this.element.nativeElement.clientHeight;
-        this.renderer.setSize(width, height);
+        this.renderer.setSize(width, height, true);
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
     }
@@ -243,10 +244,6 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         const target = new THREE.Vector3();
         object.getWorldPosition(target);
         this.camera.lookAt(target);
-    }
-
-    private addLight() {
-
     }
 
     private disposeObjects(...objects: THREE.Object3D[]) {

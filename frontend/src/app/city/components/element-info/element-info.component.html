@@ -1,53 +1,66 @@
 <mat-card>
     <mat-card-title-group>
         <mat-card-title class="element-name">{{ element.name }}</mat-card-title>
-        <mat-card-subtitle>{{ types[element.type] }}</mat-card-subtitle>
+        <mat-card-subtitle class="type-subtitle">{{ types[element.type] }}</mat-card-subtitle>
     </mat-card-title-group>
-    <mat-card-content fxLayout="column">
-        <div>
-            <span>Пакет </span>
-            <span>{{ element.parentPackage }}</span>
+    <mat-card-content fxLayout="column" fxLayoutAlign="flex-start">
+        <div fxLayout="row wrap">
+            <uml-element-info-property icon="folder" label="Пакет">
+                {{ element.parentPackage }}
+            </uml-element-info-property>
+            <uml-element-info-property *ngIf="element.type === 'CLASS'" icon="home" label="Базовый класс">
+                <uml-element-link [hasLink]="element.superClass.hasLink"
+                                  [name]="element.superClass.name"
+                                  (link)="link.emit(element.superClass.link)"></uml-element-link>
+            </uml-element-info-property>
+            <uml-element-info-property *ngIf="element.descendant" icon="control_point_duplicate" label="Наследник">
+                <uml-element-link [hasLink]="true"
+                                  [name]="element.descendant.name"
+                                  (link)="link.emit(element.descendant.link)"></uml-element-link>
+            </uml-element-info-property>
+            <uml-element-info-property *ngIf="element.implementedTypes && element.implementedTypes.length"
+                                       icon="widgets"
+                                       [label]="element.type === 'CLASS' ? 'Реализуемые интерфейсы' : 'Расширяемые интерфейсы'">
+                <uml-element-link *ngFor="let impl of element.implementedTypes"
+                                  [hasLink]="impl.hasLink"
+                                  [name]="impl.name"
+                                  (link)="link.emit(impl.link)"></uml-element-link>
+            </uml-element-info-property>
+            <uml-element-info-property *ngIf="element.implementators && element.implementators.length"
+                                       icon="extension"
+                                       label="Реализуют">
+                <uml-element-link *ngFor="let impl of element.implementators"
+                                  [hasLink]="true"
+                                  [name]="impl.name"
+                                  (link)="link.emit(impl.link)"></uml-element-link>
+            </uml-element-info-property>
         </div>
-        <div *ngIf="element.type === 'CLASS'">
-            <span>Расширяет </span>
-            <span [class.linked-name]="element.superClass.hasLink"
-                  (click)="element.superClass.hasLink && link.emit(element.superClass.link)">{{element.superClass.name}}</span>
-        </div>
-        <div *ngIf="element.descendant">
-            <span>Наследуется классом </span>
-            <span class="linked-name"
-                  (click)="link.emit(element.descendant.link)">{{element.descendant.name}}</span>
-        </div>
-        <div *ngIf="element.implementedTypes && element.implementedTypes.length">
-            <span>{{element.type === 'CLASS' ? 'Реализует ' : 'Расширяет '}}</span>
-            <ng-container *ngFor="let impl of element.implementedTypes; let last = last">
-                <span [class.linked-name]="impl.hasLink"
-                      (click)="impl.hasLink && link.emit(impl.link)">{{impl.name}}{{last ? '' : ', '}}</span>
+        <!--        <div *ngIf="element.implementators && element.implementators.length">-->
+        <!--            <span>Реализуется в </span>-->
+        <!--            <ng-container *ngFor="let impl of element.implementators; let last = last">-->
+        <!--                <span class="linked-name"-->
+        <!--                      (click)="link.emit(impl.link)">{{impl.name}}{{last ? '' : ', '}}</span>-->
+        <!--            </ng-container>-->
+        <!--        </div>-->
+        <div fxLayout="row wrap" fxLayoutGap="5px">
+            <ng-container *ngIf="element.type === 'CLASS' || element.type === 'INTERFACE'">
+                <div class="count-property">
+                    <div class="count-label">Методов</div>
+                    <div class="count-value">{{ element.methodsCount }}</div>
+                </div>
+                <div class="count-property">
+                    <div class="count-label">Полей</div>
+                    <div class="count-value">{{ element.attributesCount }}</div>
+                </div>
             </ng-container>
-        </div>
-        <div *ngIf="element.implementators && element.implementators.length">
-            <span>Реализуется в </span>
-            <ng-container *ngFor="let impl of element.implementators; let last = last">
-                <span class="linked-name"
-                      (click)="link.emit(impl.link)">{{impl.name}}{{last ? '' : ', '}}</span>
-            </ng-container>
-        </div>
-        <ng-container *ngIf="element.type === 'CLASS' || element.type === 'INTERFACE'">
-            <div>
-                <span>{{element.methodsCount}} методов</span>
+            <div *ngIf="element.type === 'ENUM'" class="count-property">
+                <div class="count-label">Значений</div>
+                <div class="count-value">{{ element.numberOfConstants }}</div>
             </div>
-            <div>
-                <span>{{element.attributesCount}} атрибутов</span>
+            <div class="count-property">
+                <div class="count-label">Строк кода</div>
+                <div class="count-value">{{ element.numberOfLines }}</div>
             </div>
-        </ng-container>
-        <div *ngIf="element.type === 'ENUM'">
-            <span>{{element.numberOfConstants}} значений</span>
-        </div>
-        <div>
-            <span>{{element.numberOfLines}} строк кода</span>
         </div>
     </mat-card-content>
-    <mat-card-actions>
-        <button mat-button (click)="link.emit(null)">ЗАКРЫТЬ</button>
-    </mat-card-actions>
 </mat-card>

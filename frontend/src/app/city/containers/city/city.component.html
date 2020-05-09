@@ -29,7 +29,7 @@
                                 <mat-label>Поиск</mat-label>
                                 <input matInput [value]="search$ | async" (input)="updateSearch($event.target.value)">
                             </mat-form-field>
-                            <div class="tree-container" fxFlex="1 0 50">
+                            <div class="tree-container" fxFlex="1 0 30">
                                 <uml-tree-visualizer (select)="selectNodes($event)"
                                                      (setRoot)="setPath($event)"
                                                      (focus)="focusNode($event)"
