@@ -1,5 +1,7 @@
+import { Element } from "./server-model/element";
+
 export class  ItemNode {
-    constructor(public item: string, public label: string, public children: ItemNode[]) {
+    constructor(public item: string, public label: string, public children: ItemNode[], public element?: Element) {
     }
 
 }

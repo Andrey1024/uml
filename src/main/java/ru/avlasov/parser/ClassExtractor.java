@@ -4,9 +4,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.EnumDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
@@ -17,10 +15,7 @@ import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclar
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
-import ru.avlasov.parser.model.ClassNode;
-import ru.avlasov.parser.model.Element;
-import ru.avlasov.parser.model.EnumNode;
-import ru.avlasov.parser.model.InterfaceNode;
+import ru.avlasov.parser.model.*;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -87,7 +82,7 @@ public class ClassExtractor {
                 Element element = createNode(declaration);
                 if (element == null) return;
                 if (declaration.getRange().isPresent()) {
-                    element.setNumberOfLines(declaration.getRange().get().end.line - declaration.getRange().get().begin.line);
+                    element.setNumberOfLines(declaration.getRange().get().getLineCount());
                 }
                 elements.add(element);
             }
@@ -166,6 +161,12 @@ public class ClassExtractor {
         return node;
     }
 
+
+    private void setMethods(ClassOrInterfaceDeclaration declaration, InterfaceNode node) {
+        for(MethodDeclaration method: declaration.getMethods()) {
+            Method element = new Method();
+        }
+    }
 
     private void setSharedProperties(ResolvedReferenceTypeDeclaration declaration, Element element) {
         element.setName(declaration.getName());

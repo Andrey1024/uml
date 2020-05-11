@@ -1,33 +1,32 @@
-import * as THREE from 'three';
-import { Strip } from "./strip.model";
+import { Strip } from "./shapes/strip.model";
+import { Shape } from "./shapes/shape";
+import { Group } from "./shapes/group";
+import { Point } from "./shapes/point";
 
-export class Grid {
-    private grid = new THREE.Group();
-    private strips: Strip[] = [];
-
-    get dimensions(): THREE.Vector3 {
-        const vector = new THREE.Vector3();
-        for (const strip of this.strips) {
-            vector.setX(Math.max(vector.x, strip.dimensions.x));
-            vector.setY(Math.max(vector.y, strip.dimensions.y));
-            vector.setZ(vector.z + strip.dimensions.z);
+export class Grid extends Group {
+    getDimensions(): Point {
+        let x = 0, y = 0, z = 0;
+        for (const strip of this.children) {
+            const dim = strip.getDimensions();
+            x = Math.max(x, dim.x);
+            y = Math.max(y, dim.y);
+            x = z + dim.z;
         }
-        return vector;
+        return { x, y, z };
     }
 
-    constructor(private objects: THREE.Object3D[]) {
-        this.grid.matrixAutoUpdate = false;
-        this.grid.matrixWorldNeedsUpdate = true;
+    constructor(private objects: Shape[]) {
+        super([]);
     }
 
-    public finalize(): THREE.Object3D {
+    public finalize() {
         this.calculateGrid();
         this.positionStrips();
-        return this.grid;
+        return super.finalize();
     }
 
     private calculateGrid() {
-        this.strips.push(new Strip());
+        this.children.push(new Strip());
 
         let activeStrip: number = 0;
         const bestFit: { aspectDistance: number; strip: number; } = {
@@ -36,10 +35,10 @@ export class Grid {
         };
 
         while (this.objects.length) {
-            const strip = this.strips[activeStrip];
+            const strip = this.children[activeStrip] as Strip;
             const object = this.objects.shift();
 
-            if (!strip.dimensions.x || bestFit.strip === activeStrip) {
+            if (!strip.getDimensions().x || bestFit.strip === activeStrip) {
                 strip.addObject(object);
 
                 activeStrip = 0;
@@ -48,8 +47,8 @@ export class Grid {
                 continue;
             }
 
-            const currentDimensions = this.dimensions;
-            const newLength = Math.max(strip.dimensions.x + object.userData.length, currentDimensions.x);
+            const currentDimensions = this.getDimensions();
+            const newLength = Math.max(strip.getDimensions().x + object.getDimensions().x, currentDimensions.x);
 
             const possibleAspectRatio = this.getAspectRatio(newLength, currentDimensions.z);
             const possibleAspectRatioDist = Math.abs(possibleAspectRatio - 1.0);
@@ -65,17 +64,17 @@ export class Grid {
                     bestFit.strip = activeStrip;
                 }
 
-                const isLastStrip = activeStrip + 1 === this.strips.length;
+                const isLastStrip = activeStrip + 1 === this.children.length;
                 let gotoBestFit = false;
                 if (isLastStrip) {
-                    const widthWithNewStrip = currentDimensions.z + object.userData.width;
+                    const widthWithNewStrip = currentDimensions.z + object.getDimensions().z;
                     const newStripAspectRatio = this.getAspectRatio(currentDimensions.x, widthWithNewStrip);
                     const newStripAspectRatioDist = Math.abs(newStripAspectRatio - 1.0);
                     gotoBestFit = newStripAspectRatioDist > bestFit.aspectDistance;
                 }
 
                 if (isLastStrip && !gotoBestFit) {
-                    this.strips.push(new Strip());
+                    this.children.push(new Strip());
                 }
 
                 this.objects.unshift(object);
@@ -97,14 +96,13 @@ export class Grid {
 
     private positionStrips() {
         let offset = 0;
-        const gridDimensions = this.dimensions;
-        for (const strip of this.strips) {
-            const object = strip.finalize(), stripDimensions = strip.dimensions;
-            object.applyMatrix(new THREE.Matrix4().makeTranslation(
-                (stripDimensions.x - gridDimensions.x) / 2, 0, (stripDimensions.z - gridDimensions.z) / 2 + offset)
-            )
+        const gridDimensions = this.getDimensions();
+        for (const strip of this.children) {
+            const stripDimensions = strip.getDimensions();
+            strip.andTranslate(
+                (stripDimensions.x - gridDimensions.x) / 2, 0, (stripDimensions.z - gridDimensions.z) / 2 + offset
+            );
             offset += stripDimensions.z;
-            this.grid.add(object);
         }
     }
 }
