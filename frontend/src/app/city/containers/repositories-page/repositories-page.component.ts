@@ -4,7 +4,7 @@ import { Create, LoadList, Remove, RepositoriesState } from "../../state/reposit
 import { Observable } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { AddRepoDialogComponent } from "../../components/add-repo-dialog/add-repo-dialog.component";
-import { RepositoryInfo } from "../../model/server-model/repository-info.model";
+import { RepositoryInfo } from "../../model/presentation/server/repository-info.model";
 
 @Component({
     selector: 'uml-repositories-page',

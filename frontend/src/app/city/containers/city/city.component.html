@@ -16,7 +16,6 @@
                 <mat-form-field>
                     <mat-label>Корневая папка</mat-label>
                     <mat-select [value]="sourceRoot$ | async" (selectionChange)="selectSourceRoot($event.value)">
-                        <mat-option [value]="''">Не группировать</mat-option>
                         <mat-option *ngFor="let root of sourceRoots$ | async" [value]="root">{{root}}</mat-option>
                     </mat-select>
                 </mat-form-field>
@@ -30,13 +29,11 @@
                                 <input matInput [value]="search$ | async" (input)="updateSearch($event.target.value)">
                             </mat-form-field>
                             <div class="tree-container" fxFlex="1 0 30">
-                                <uml-tree-visualizer (select)="selectNodes($event)"
-                                                     (setRoot)="setPath($event)"
+                                <uml-tree-visualizer (setRoot)="setPath($event)"
                                                      (focus)="focusNode($event)"
                                                      (details)="selectElement($event)"
                                                      [selectedElement]="(selectedElement$ | async)?.fullPath"
                                                      [searchString]="search$ | async"
-                                                     [selected]="selectedNodes$ | async"
                                                      [data]="treeItems$ | async"></uml-tree-visualizer>
                             </div>
                             <mat-divider></mat-divider>
@@ -55,11 +52,11 @@
             </div>
         </mat-sidenav>
         <mat-sidenav-content>
-            <uml-canvas-visualizer [hierarchy]="hierarchy$ | async"
+            <uml-canvas-visualizer [tree]="treeItems$ | async"
                                    [displayOptions]="options$ | async"
-                                   [selected]="selectedNodes$ | async"
                                    [selectedElement]="(selectedElement$ | async)?.fullPath"
-                                   [layoutName]="selectedLayout$ | async"></uml-canvas-visualizer>
+                                   [layoutName]="selectedLayout$ | async"
+                                   (select)="selectElement($event)"></uml-canvas-visualizer>
         </mat-sidenav-content>
 
     </mat-sidenav-container>

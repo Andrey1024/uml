@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { Actions, ofAction, Select, Store } from "@ngxs/store";
 import { BehaviorSubject, combineLatest, Observable, of } from "rxjs";
-import { Author, Commit } from "../../model/server-model/commit.model";
+import { Author, Commit } from "../../model/presentation/server/commit.model";
 import { ActivatedRoute } from "@angular/router";
 import { CommitsState, Load } from "../../state/commits.state";
 import {
@@ -10,19 +10,18 @@ import {
     RepositoryState,
     SelectAuthors,
     SelectCommit, SelectDetails,
-    SelectNodes,
     SelectSourceRoot,
     SetRootPath,
     UpdateSearch
 } from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
 import { Hierarchy } from "../../model/hierarchy.model";
-import { DisplayOptions, LayoutService } from "../../service/layout.service";
 import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/canvas-visualizer.component";
 import { map, switchMap, tap } from "rxjs/operators";
 import { DataManageSelectors } from "../../state/data-manage.selectors";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { Element } from "../../model/server-model/element";
+import { Element } from "../../model/presentation/server/element";
+import { Visualizer } from "../../services/visualizer";
 
 @Component({
     selector: 'uml-city',
@@ -63,9 +62,6 @@ export class CityComponent implements OnInit {
         switchMap(i => this.store.select(DataManageSelectors.getHierarchySlice(i)))
     );
 
-    @Select(RepositoryState.getSelectedNodes)
-    selectedNodes$: Observable<string[]>;
-
     @Select(RepositoryState.getSelectedCommit)
     selectedCommit$: Observable<string>;
 
@@ -73,14 +69,14 @@ export class CityComponent implements OnInit {
     selectedAuthors$: Observable<string[]>;
 
     sourceRoots$: Observable<any> = this.commitIndex$.pipe(
-        switchMap(i => this.store.select(DataManageSelectors.getSourceRoots(i)))
+        switchMap(i => this.store.select(RepositoryState.getSourceRoots(i)))
     );
 
     @Select(RepositoryState.getSourceRoot)
     sourceRoot$: Observable<string>
 
     @Select(RepositoryState.getDisplayOptions)
-    options$: Observable<DisplayOptions>;
+    options$: Observable<any>;
 
     @Select(CommitsState.getAuthorsHSL)
     authorColors$: Observable<{ [email: string]: number }>;
@@ -102,7 +98,7 @@ export class CityComponent implements OnInit {
                 private route: ActivatedRoute,
                 private snackBar: MatSnackBar,
                 private actions: Actions,
-                @Inject(LayoutService) private layouts: LayoutService[]) {
+                @Inject(Visualizer) private layouts: Visualizer[]) {
         this.selectedLayout$.next(layouts[0].name);
         this.actions.pipe(
             ofAction(LoadState),
@@ -139,10 +135,6 @@ export class CityComponent implements OnInit {
 
     selectSourceRoot(root: string) {
         this.store.dispatch(new SelectSourceRoot(root));
-    }
-
-    selectNodes(nodes: string[]) {
-        this.store.dispatch(new SelectNodes(nodes));
     }
 
     selectAuthorsView(showAuthors: boolean) {

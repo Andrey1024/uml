@@ -1,5 +1,4 @@
 import {
-    ComponentRef,
     Directive,
     ElementRef,
     EventEmitter,
@@ -15,9 +14,7 @@ import {
 } from '@angular/core';
 import * as THREE from 'three';
 import { PointerLockControls } from '../utils/pointer-lock-controls';
-import { TooltipComponent } from '../components/tooltip/tooltip.component';
-import { Overlay, OverlayRef } from '@angular/cdk/overlay';
-import { ComponentPortal } from '@angular/cdk/portal';
+import { Overlay } from '@angular/cdk/overlay';
 
 export const RENDERER = new InjectionToken<THREE.Renderer>('renderer');
 
@@ -26,19 +23,22 @@ export const RENDERER = new InjectionToken<THREE.Renderer>('renderer');
     exportAs: 'three'
 })
 export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
-    @Input('umlThree') objects: THREE.Object3D[] = [];
-    @Input() visibleNodes: string[];
-    @Input() highLighted: string;
+    @Input('umlThree') object: THREE.Object3D;
+    @Input() pickingObject: THREE.Object3D;
     @Output() select = new EventEmitter();
-
-    tooltipEl: HTMLDivElement;
-    tooltipComponent: ComponentRef<TooltipComponent>;
-    tooltipOverlay: OverlayRef;
+    @Output() hover = new EventEmitter<number>();
+    //
+    // tooltipEl: HTMLDivElement;
+    // tooltipComponent: ComponentRef<TooltipComponent>;
+    // tooltipOverlay: OverlayRef;
 
     private scene = new THREE.Scene();
     private camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
     private controls = new PointerLockControls(this.camera);
     private clock = new THREE.Clock();
+
+    private pickingScene = new THREE.Scene();
+    private pickingTexture = new THREE.WebGLRenderTarget(1, 1)
 
     private animationFrame: number;
 
@@ -49,27 +49,25 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     private moveRight = false;
 
 
-    private readonly rayCaster = new THREE.Raycaster();
-    private intersected: THREE.Object3D | null = null;
-
     private mouse = new THREE.Vector2();
+    private hoveredId = 0;
+    private renderer = new THREE.WebGLRenderer({ alpha: true });
 
-    private highLightedObject: THREE.Object3D;
 
-    constructor(@Inject(RENDERER) private renderer,
-                private element: ElementRef<HTMLDivElement>,
+    constructor( element: ElementRef<HTMLDivElement>,
                 private overlay: Overlay) {
-        this.tooltipEl = document.createElement('div');
-        this.tooltipEl.style.position = 'absolute';
-
-        this.tooltipOverlay = this.overlay.create({
-            positionStrategy: this.overlay.position().flexibleConnectedTo(this.tooltipEl)
-                .withPositions([{
-                    originX: 'center', originY: 'center', overlayX: 'start', overlayY: 'bottom'
-                }]),
-            minWidth: 100,
-            minHeight: 20
-        });
+        this.controls.onUnlock = () => this.moveBackward = this.moveForward = this.moveLeft = this.moveRight = false;
+        // this.tooltipEl = document.createElement('div');
+        // this.tooltipEl.style.position = 'absolute';
+        //
+        // this.tooltipOverlay = this.overlay.create({
+        //     positionStrategy: this.overlay.position().flexibleConnectedTo(this.tooltipEl)
+        //         .withPositions([{
+        //             originX: 'center', originY: 'center', overlayX: 'start', overlayY: 'bottom'
+        //         }]),
+        //     minWidth: 100,
+        //     minHeight: 20
+        // });
 
         // this.renderer.shadowMap.enabled = true;
         // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -115,17 +113,16 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         this.camera.updateProjectionMatrix();
     }
 
-    @HostListener('document:mousemove', ['$event'])
-    onMouseMove(evt: MouseEvent) {
-        this.mouse.x = (evt.offsetX / this.element.nativeElement.clientWidth) * 2 - 1;
-        this.mouse.y = -(evt.offsetY / this.element.nativeElement.clientHeight) * 2 + 1;
-        this.tooltipEl.style.left = `${evt.offsetX}px`;
-        this.tooltipEl.style.top = `${evt.offsetY}px`;
+    onMouseMove(e) {
+        this.mouse.x = e.offsetX;
+        this.mouse.y = e.offsetY;
     }
 
     @HostListener('click')
     onClick() {
-        this.controls.lock();
+        if (this.hoveredId) {
+            this.select.emit(this.hoveredId);
+        }
     }
 
     @HostListener('window:keydown', ['$event'])
@@ -180,47 +177,58 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
 
     ngOnInit() {
         this.element.nativeElement.appendChild(this.renderer.domElement);
-        this.element.nativeElement.appendChild(this.tooltipEl);
+        this.renderer.domElement.addEventListener('mousemove', e => this.onMouseMove(e));
+        // this.element.nativeElement.appendChild(this.tooltipEl);
         this.resize();
         this.animate();
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes.objects) {
-            if (!changes.objects.isFirstChange() && changes.objects.previousValue && changes.objects.previousValue.length) {
-                this.scene.remove(...changes.objects.previousValue);
-                this.disposeObjects(...changes.objects.previousValue);
+        if (changes.object) {
+            if (!changes.object.isFirstChange() && changes.object.previousValue) {
+                this.scene.remove(changes.object.previousValue);
+                this.disposeObjects(changes.object.previousValue);
             }
-            if (this.objects && this.objects.length) {
-                this.scene.add(...this.objects);
-            }
-        }
-        if (this.objects && (changes.visibleNodes || changes.objects)) {
-            this.objects.forEach(o => this.toggleVisibility(o))
-        }
-        if (changes.highLighted) {
-            if (this.highLightedObject && this.highLighted !== this.highLightedObject.name) {
-                this.highLightedObject['material'].color.setHex(this.highLightedObject['savedColor']);
-                this.highLightedObject = null;
-            }
-            if (this.highLighted) {
-                this.highLightedObject = this.scene.getObjectByName(this.highLighted);
-                this.highLightedObject['savedColor'] = this.highLightedObject['material'].color.getHex();
-                this.highLightedObject['material'].color.setHex(0x39e639);
+            if (this.object) {
+                this.scene.add(this.object);
             }
         }
+        if (changes.pickingObject) {
+            if (changes.pickingObject.previousValue) {
+                this.pickingScene.remove(changes.pickingObject.previousValue)
+            }
+            if (this.pickingObject) {
+                this.pickingScene.add(this.pickingObject);
+            }
+        }
+        // if (this.objects && (changes.visibleNodes || changes.objects)) {
+        //     this.objects.forEach(o => this.toggleVisibility(o))
+        // }
+        // if (changes.highLighted) {
+        //     if (this.highLightedObject && this.highLighted !== this.highLightedObject.name) {
+        //         this.highLightedObject['material'].color.setHex(this.highLightedObject['savedColor']);
+        //         this.highLightedObject = null;
+        //     }
+        //     if (this.highLighted) {
+        //         this.highLightedObject = this.scene.getObjectByName(this.highLighted);
+        //         this.highLightedObject['savedColor'] = this.highLightedObject['material'].color.getHex();
+        //         this.highLightedObject['material'].color.setHex(0x39e639);
+        //     }
+        // }
     }
 
-    toggleVisibility(obj: THREE.Object3D) {
-        if (obj.type === 'Group') {
-            obj.children.forEach(child => this.toggleVisibility(child));
-        }
-        obj.visible = !obj.name || this.visibleNodes.includes(obj.name);
-    }
+    //
+    // toggleVisibility(obj: THREE.Object3D) {
+    //     if (obj.type === 'Group') {
+    //         obj.children.forEach(child => this.toggleVisibility(child));
+    //     }
+    //     obj.visible = !obj.name || this.visibleNodes.includes(obj.name);
+    // }
 
     ngOnDestroy(): void {
+        // this.renderer.domElement.removeE
         cancelAnimationFrame(this.animationFrame);
-        this.disposeObjects(...this.objects);
+        this.disposeObjects(this.object);
         this.controls.dispose();
         this.scene.dispose();
         this.element.nativeElement.remove();
@@ -265,41 +273,72 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
 
     private animate() {
         this.animationFrame = requestAnimationFrame(() => this.animate());
-        this.renderer.setClearColor(0xffffff, 0)
-
         const delta = this.clock.getDelta();
 
-        this.rayCaster.setFromCamera(this.mouse, this.camera);
-
-        const intersects = this.rayCaster.intersectObjects(this.objects, true);
-
-        if (this.intersected !== null) {
-            this.intersected['material'].color.setHex(this.intersected['savedColor']);
+        // this.rayCaster.setFromCamera(this.mouse, this.camera);
+        //
+        // const intersects = this.rayCaster.intersectObjects(this.objects, true);
+        //
+        // if (this.intersected !== null) {
+        //     this.intersected['material'].color.setHex(this.intersected['savedColor']);
+        // }
+        // if (intersects.length > 0 && intersects[0].object.userData && intersects[0].object.userData.data) {
+        //     this.intersected = intersects[0].object;
+        //     if (!this.tooltipOverlay.hasAttached()) {
+        //         this.tooltipComponent = this.tooltipOverlay.attach(new ComponentPortal(TooltipComponent));
+        //     }
+        //     this.intersected['savedColor'] = this.intersected['material'].color.getHex();
+        //     this.intersected['material'].color.setHex(0xff0000);
+        //     this.tooltipComponent.instance.object = this.intersected.userData;
+        //     this.tooltipOverlay.updatePosition();
+        // } else {
+        //     this.tooltipOverlay.detach();
+        // }
+        if (!this.controls.isLocked) {
+            this.pick();
+            this.renderer.setRenderTarget(null);
         }
-        if (intersects.length > 0 && intersects[0].object.userData && intersects[0].object.userData.data) {
-            this.intersected = intersects[0].object;
-            if (!this.tooltipOverlay.hasAttached()) {
-                this.tooltipComponent = this.tooltipOverlay.attach(new ComponentPortal(TooltipComponent));
-            }
-            this.intersected['savedColor'] = this.intersected['material'].color.getHex();
-            this.intersected['material'].color.setHex(0xff0000);
-            this.tooltipComponent.instance.object = this.intersected.userData;
-            this.tooltipOverlay.updatePosition();
-        } else {
-            this.tooltipOverlay.detach();
-        }
-
 
         this.renderer.render(this.scene, this.camera);
         if (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight) {
             const direction = new THREE.Vector3();
             this.camera.getWorldDirection(direction).normalize();
             if (this.moveForward || this.moveBackward) {
-                direction.multiplyScalar(delta * 100 * (Number(this.moveForward) - Number(this.moveBackward)));
-
-                this.controls.getObject().position.add(direction);
+                direction.multiplyScalar(Number(this.moveForward) - Number(this.moveBackward));
             }
+            if (this.moveLeft || this.moveRight) {
+                const yNormal = new THREE.Vector3(0, 1, 0)
+                direction.projectOnPlane(yNormal).applyAxisAngle(yNormal, Math.PI / 2)
+                    .multiplyScalar(Number(this.moveLeft) - Number(this.moveRight)).normalize();
+            }
+            this.camera.position.add(direction.multiplyScalar(delta * 150));
+        }
+    }
 
+    private pick() {
+        const pixelRatio = this.renderer.getPixelRatio();
+        this.camera.setViewOffset(
+            this.renderer.getContext().drawingBufferWidth,   // full width
+            this.renderer.getContext().drawingBufferHeight,  // full top
+            this.mouse.x * pixelRatio | 0,             // rect x
+            this.mouse.y * pixelRatio | 0,             // rect y
+            1,                                          // rect width
+            1,                                          // rect height
+        );
+        this.renderer.setRenderTarget(this.pickingTexture);
+        this.renderer.render(this.pickingScene, this.camera);
+
+
+        this.camera.clearViewOffset();
+
+        const pixelBuffer = new Uint8Array(4);
+
+
+        this.renderer.readRenderTargetPixels(this.pickingTexture, 0, 0, 1, 1, pixelBuffer);
+        const id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+        if (id !== this.hoveredId) {
+            this.hoveredId = id;
+            this.hover.emit(id);
         }
     }
 }

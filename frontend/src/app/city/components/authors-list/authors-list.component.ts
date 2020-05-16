@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { Author } from "../../model/server-model/commit.model";
+import { Author } from "../../model/presentation/server/commit.model";
 import { SelectionModel } from "@angular/cdk/collections";
 import { MatListOption } from "@angular/material/list";
 import { map } from "lodash-es";

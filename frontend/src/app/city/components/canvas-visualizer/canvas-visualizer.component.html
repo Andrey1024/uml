@@ -1,1 +1,3 @@
-<div [umlThree]="data" [visibleNodes]="selected" [highLighted]="selectedElement" class="canvas"></div>
+<div [umlThree]="data" [pickingObject]="pickingMesh" class="canvas" [class.can-select]="!!highLightMesh"
+     (select)="selectElement($event)"
+     (hover)="addHighLight($event)"></div>

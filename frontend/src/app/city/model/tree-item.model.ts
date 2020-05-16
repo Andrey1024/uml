@@ -1,9 +1,13 @@
-import { Element } from "./server-model/element";
+import { Element } from "./presentation/server/element";
 
-export class  ItemNode {
-    constructor(public item: string, public label: string, public children: ItemNode[], public element?: Element) {
-    }
-
+export interface  ItemNode {
+    item: string,
+    label: string,
+    lifeRatio: number,
+    level: number;
+    depth: number;
+    children: ItemNode[],
+    element?: Element;
 }
 
 /** Flat to-do item node with expandable and level information */

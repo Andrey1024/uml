@@ -41,38 +41,28 @@ export class PointerLockControls {
     getObject = () => this.camera;
 
     lock() {
+        this.isLocked = true;
         this.onLock && this.onLock();
-        this.domElement.requestPointerLock();
     }
 
     unlock() {
+        this.isLocked = false;
         this.onUnlock && this.onUnlock();
-        document.exitPointerLock();
     }
 
-    private onPointerlockChange() {
-        this.isLocked = document.pointerLockElement === this.domElement;
-        if (this.isLocked) {
-            this.lock && this.lock();
-        } else {
-            this.unlock && this.unlock();
-        }
-    }
-
-    private onPointerlockError() {
-        console.error('THREE.PointerLockControls: Unable to use Pointer Lock API');
-    }
 
     private connect() {
         document.addEventListener('mousemove', (e) => this.onMouseMove(e), false);
-        document.addEventListener('pointerlockchange', () => this.onPointerlockChange(), false);
-        document.addEventListener('pointerlockerror', () => this.onPointerlockError(), false);
+        document.addEventListener('mousedown', () => this.lock(), false);
+        document.addEventListener('mouseup', () => this.unlock(), false);
+        document.addEventListener('mouseout', () => this.unlock(), false);
 
     }
 
     private disconnect() {
         document.removeEventListener('mousemove', (e) => this.onMouseMove(e), false);
-        document.removeEventListener('pointerlockchange', () => this.onPointerlockChange(), false);
-        document.removeEventListener('pointerlockerror', () => this.onPointerlockError(), false);
+        document.removeEventListener('mousedown', () => this.lock(), false);
+        document.removeEventListener('mouseup', () => this.unlock(), false);
+        document.removeEventListener('mouseout', () => this.unlock(), false);
     }
 }

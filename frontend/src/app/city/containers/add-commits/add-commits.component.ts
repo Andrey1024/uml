@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
-import { Commit } from "../../model/server-model/commit.model";
+import { Commit } from "../../model/presentation/server/commit.model";
 import { groupBy, toPairs } from "lodash-es";
 
 @Component({

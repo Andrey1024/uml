@@ -10,7 +10,7 @@ import { MatTreeModule } from '@angular/material/tree';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
-import { RENDERER, ThreeDirective } from './directives/three.directive';
+import { ThreeDirective } from './directives/three.directive';
 import { TreeVisualizerComponent } from './components/tree-visualizer/tree-visualizer.component';
 import { NgxsModule } from "@ngxs/store";
 import { RepositoryState } from "./state/repository.state";
@@ -24,7 +24,6 @@ import { MatToolbarModule } from "@angular/material/toolbar";
 import { AddCommitsComponent } from './containers/add-commits/add-commits.component';
 import { CityComponent } from './containers/city/city.component';
 import { RouterModule } from "@angular/router";
-import { CommitsState } from "./state/commits.state";
 import { FlexLayoutModule } from "@angular/flex-layout";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatListModule } from "@angular/material/list";
@@ -41,6 +40,10 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { ElementInfoComponent } from './components/element-info/element-info.component';
 import { ElementInfoPropertyComponent } from './components/element-info-property/element-info-property.component';
 import { ElementLinkComponent } from './components/element-link/element-link.component';
+import { Visualizer } from "./services/visualizer";
+import { DistrictVisualizer } from "./model/visualizers/district-visualizer";
+import { StreetsVisualizer } from "./model/visualizers/streets-visualizer";
+import { VersionsState } from "./state/versions.state";
 
 
 @NgModule({
@@ -56,7 +59,7 @@ import { ElementLinkComponent } from './components/element-link/element-link.com
         MatTreeModule,
         MatToolbarModule,
         MatSliderModule,
-        NgxsModule.forFeature([RepositoryState, CommitsState, RepositoriesState]),
+        NgxsModule.forFeature([RepositoryState, VersionsState, RepositoriesState]),
         MatCheckboxModule,
         MatCardModule,
         MatButtonModule,
@@ -89,7 +92,8 @@ import { ElementLinkComponent } from './components/element-link/element-link.com
         ElementLinkComponent,
     ],
     providers: [
-        { provide: RENDERER, useValue: new THREE.WebGLRenderer({ alpha: true }) }
+        { provide: Visualizer, useClass: DistrictVisualizer, multi: true },
+        { provide: Visualizer, useClass: StreetsVisualizer, multi: true },
     ],
     entryComponents: [
         TooltipComponent,

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { Element } from "../../model/server-model/element";
+import { Element } from "../../model/presentation/server/element";
 import { isString } from "lodash-es";
 
 @Component({

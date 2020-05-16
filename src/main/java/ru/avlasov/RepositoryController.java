@@ -1,6 +1,5 @@
 package ru.avlasov;
 
-import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -11,13 +10,14 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.springframework.stereotype.Controller;
 import ru.avlasov.parser.ClassExtractor;
 import ru.avlasov.parser.model.Element;
-import ru.avlasov.web.responses.Project;
 import ru.avlasov.web.responses.Commit;
+import ru.avlasov.web.responses.Project;
 import ru.avlasov.web.responses.RepositoryInfo;
 
 import javax.annotation.PostConstruct;
@@ -125,7 +125,7 @@ public class RepositoryController {
                 ObjectLoader loader = repository.open(treeWalk.getObjectId(0));
                 String filePath = treeWalk.getPathString();
                 extractor.parseFile(filePath, loader.openStream());
-                fileChangesByAuthors.put(filePath, countFileChanges(repoName, commit, filePath));
+                fileChangesByAuthors.put(filePath, new HashMap<>());
             }
 
             treeWalk.close();
@@ -139,24 +139,28 @@ public class RepositoryController {
         return new Project(repoName, commit, elements);
     }
 
-
-    private Map<String, Integer> countFileChanges(String repoName, String commitName, String path) throws IOException {
+    public Map<String, Map<String, Integer>> countChangesBetweenCommits(String repoName, String commitFrom, String commitTo) throws IOException {
+        Map<String, Map<String, Integer>> result = new HashMap<>();
         Repository repository = repositoryMap.get(repoName);
-        Map<String, Integer> result = new HashMap<>();
         try (RevWalk revWalk = getRevWalk(repoName)) {
             revWalk.reset();
-            revWalk.setTreeFilter(PathFilter.create(path));
-            revWalk.markStart(revWalk.parseCommit(repository.resolve(commitName)));
+            revWalk.setTreeFilter(AndTreeFilter.create(PathSuffixFilter.create(".java"), TreeFilter.ANY_DIFF));
+            revWalk.markStart(revWalk.parseCommit(repository.resolve(commitTo)));
             revWalk.sort(RevSort.COMMIT_TIME_DESC);
 
             for (RevCommit revCommit : revWalk) {
-                PersonIdent personIdent = revCommit.getAuthorIdent();
-                if (personIdent != null) {
-                    String email = revCommit.getAuthorIdent().getEmailAddress();
-                    if (!result.containsKey(email)) {
-                        result.put(email, 0);
-                    }
-                    result.put(email, result.get(email) + 1);
+                String email = revCommit.getAuthorIdent().getEmailAddress();
+                TreeWalk treeWalk = new TreeWalk(repository);
+                treeWalk.addTree(revCommit);
+                treeWalk.setRecursive(true);
+                treeWalk.setFilter(PathSuffixFilter.create(".java"));
+
+                while (treeWalk.next()) {
+                    result.getOrDefault(treeWalk.getPathString(), new HashMap<>()).merge(email, 1, Integer::sum);
+                }
+
+                if (revCommit.getId().getName().equals(commitFrom)) {
+                    break;
                 }
             }
             revWalk.dispose();

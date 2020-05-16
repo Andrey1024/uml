@@ -4,14 +4,14 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
-import com.github.javaparser.resolution.declarations.ResolvedClassDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedEnumDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedInterfaceDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+import com.github.javaparser.resolution.declarations.*;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
@@ -135,6 +135,7 @@ public class ClassExtractor {
         node.setMethodsCount(declaration.getMethods().size());
         node.setAttributesCount(declaration.getFields().size());
 
+        this.setMethods(declaration, node);
         return node;
     }
 
@@ -164,7 +165,19 @@ public class ClassExtractor {
 
     private void setMethods(ClassOrInterfaceDeclaration declaration, InterfaceNode node) {
         for(MethodDeclaration method: declaration.getMethods()) {
-            Method element = new Method();
+            Method methodNode = new Method();
+            methodNode.setNumberOfLines(method.getRange().get().getLineCount());
+            methodNode.setName(method.getNameAsString());
+            try {
+                ResolvedMethodDeclaration resolved = method.resolve();
+                methodNode.setReturnType(resolved.getReturnType().describe());
+                for (ResolvedTypeParameterDeclaration parameter: resolved.getTypeParameters()) {
+                    methodNode.getParameterTypes().add(parameter.getQualifiedName());
+                }
+            } catch (UnsolvedSymbolException e) {
+                methodNode.setReturnType(method.getTypeAsString());
+            }
+            node.getMethods().add(methodNode);
         }
     }
 

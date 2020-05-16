@@ -1,13 +1,25 @@
 import { Shape } from "./shape";
 import * as THREE from 'three';
+import { Point } from "./point";
 
 export class Box extends Shape {
-    constructor(private width: number, private height: number, private length: number) {
-        super();
-        this.geometry = new THREE.BoxBufferGeometry(width, height, length);
+
+    get size(): Point {
+        return {
+            x: this.length,
+            y: this.height,
+            z: this.width
+        };
     }
 
-    getDimensions(): { x: number; y: number; z: number } {
-        return { x: this.width, y: this.height, z: this.length };
+
+    constructor(private length: number, private height: number, private width: number) {
+        super();
+        this.geometry = new THREE.BoxBufferGeometry(length, height, width);
+    }
+
+    protected createHighLightGeometry(): THREE.BufferGeometry {
+        return new THREE.BoxBufferGeometry(this.length + 2, this.height + 1, this.width + 2)
+            .translate(0, 1, 0)
     }
 }

@@ -26,15 +26,9 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
 
     @Input() data: ItemNode[];
 
-    @Input() set selected(nodes: string[]) {
-        this.selectedNodes = new Set(nodes);
-    };
-
     @Input() searchString: string;
 
     @Input() selectedElement: string;
-
-    @Output() select = new EventEmitter<string[]>();
 
     @Output() setRoot = new EventEmitter<string>();
 
@@ -47,7 +41,6 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
     treeControl: FlatTreeControl<ItemFlatNode>;
     treeFlattener: MatTreeFlattener<ItemNode, ItemFlatNode>;
     dataSource: MatTreeFlatDataSource<ItemNode, ItemFlatNode>;
-    selectedNodes: Set<string>;
 
     /** The selection for checklist */
 
@@ -55,26 +48,6 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
         this.treeFlattener = new MatTreeFlattener(this.transformer, this.getLevel, this.isExpandable, this.getChildren);
         this.treeControl = new FlatTreeControl<ItemFlatNode>(this.getLevel, this.isExpandable);
         this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
-    }
-
-    private selectNodes(...nodes: ItemFlatNode[]) {
-        nodes.forEach(name => this.selectedNodes.add(name.item));
-    }
-
-
-    private deselectNodes(...nodes: ItemFlatNode[]) {
-        nodes.forEach(name => this.selectedNodes.delete(name.item));
-
-    }
-
-    private toggleSelection(...nodes: ItemFlatNode[]) {
-        nodes.forEach(name => {
-            if (this.selectedNodes.has(name.item)) {
-                this.selectedNodes.delete(name.item);
-            } else {
-                this.selectedNodes.add(name.item);
-            }
-        });
     }
 
     highLight(label: string) {
@@ -113,9 +86,10 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
         }
         if (changes.selectedElement && this.selectedElement && this.scrollable) {
             const index = this.treeControl.dataNodes.findIndex(i => i.item === this.selectedElement);
-            if (index !== -1) {
+            const treeHeight = this.scrollable.getElementRef().nativeElement.clientHeight;
+            // if (index !== -1 && (this.scrollable.measureScrollOffset("top")) {
                 this.scrollable.scrollTo({ top: index * 30 - 20 });
-            }
+            // }
         }
     }
 
@@ -149,68 +123,6 @@ export class TreeVisualizerComponent implements OnInit, OnChanges {
         this.nestedNodeMap.set(node, flatNode);
         return flatNode;
     }
-
-    /** Whether all the descendants of the node are selected. */
-    descendantsAllSelected(node: ItemFlatNode): boolean {
-        const descendants = this.treeControl.getDescendants(node);
-        return descendants.every(child =>
-            this.selectedNodes.has(child.item)
-        );
-    }
-
-    /** Whether part of the descendants are selected */
-    descendantsPartiallySelected(node: ItemFlatNode): boolean {
-        const descendants = this.treeControl.getDescendants(node);
-        const result = descendants.some(child => this.selectedNodes.has(child.item));
-        return result && !this.descendantsAllSelected(node);
-    }
-
-    /** Toggle the to-do item selection. Select/deselect all the descendants node */
-    packageSelectionToggle(node: ItemFlatNode): void {
-        this.toggleSelection(node);
-        const descendants = this.treeControl.getDescendants(node);
-        this.selectedNodes.has(node.item)
-            ? this.selectNodes(...descendants)
-            : this.deselectNodes(...descendants);
-
-        // Force update for the parent
-        descendants.every(child =>
-            this.selectedNodes.has(child.item)
-        );
-        this.checkAllParentsSelection(node);
-        this.select.emit([...this.selectedNodes]);
-    }
-
-    /** Toggle a leaf to-do item selection. Check all the parents to see if they changed */
-    classSelectionToggle(node: ItemFlatNode): void {
-        this.toggleSelection(node);
-        this.checkAllParentsSelection(node);
-        this.select.emit([...this.selectedNodes]);
-    }
-
-    /* Checks all the parents when a leaf node is selected/unselected */
-    checkAllParentsSelection(node: ItemFlatNode): void {
-        let parent: ItemFlatNode | null = this.getParentNode(node);
-        while (parent) {
-            this.checkRootNodeSelection(parent);
-            parent = this.getParentNode(parent);
-        }
-    }
-
-    /** Check root node checked state and change it accordingly */
-    checkRootNodeSelection(node: ItemFlatNode): void {
-        const nodeSelected = this.selectedNodes.has(node.item);
-        const descendants = this.treeControl.getDescendants(node);
-        const descAllSelected = descendants.some(child =>
-            this.selectedNodes.has(child.item)
-        );
-        if (nodeSelected && !descAllSelected) {
-            this.deselectNodes(node);
-        } else if (!nodeSelected && descAllSelected) {
-            this.selectNodes(node);
-        }
-    }
-
     /* Get the parent node of a node */
     getParentNode(node: ItemFlatNode): ItemFlatNode | null {
         const currentLevel = this.getLevel(node);

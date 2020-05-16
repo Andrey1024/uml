@@ -1,8 +1,8 @@
 import { createSelector } from "@ngxs/store";
-import { map, set } from "lodash-es";
+import { map, mapValues, set } from "lodash-es";
 import { RepositoryState } from "./repository.state";
 import { Hierarchy } from "../model/hierarchy.model";
-import { Element } from "../model/server-model/element";
+import { Element } from "../model/presentation/server/element";
 import { ItemNode } from "../model/tree-item.model";
 import { createCachedSelector } from "../utils/cached-selector";
 
@@ -26,21 +26,30 @@ function createHierarchy(elements: Element[]): Hierarchy {
 }
 
 
-function createTree(hierarchy: any, pack: string = null): ItemNode[] {
-    return Object.keys(hierarchy).map(path => hierarchy[path].type
-        ? new ItemNode(hierarchy[path].fullPath, hierarchy[path].name, null)
-        : new ItemNode(pack ? `${pack}.${path}` : path, path, createTree(hierarchy[path], pack ? `${pack}.${path}` : path)))
+function createTree(hierarchy: any, pack: string = null, level = 0): ItemNode[] {
+    return Object.keys(hierarchy).map(path => {
+        if (hierarchy[path].type) {
+            return {
+                item: hierarchy[path].fullPath,
+                label: hierarchy[path].name,
+                lifeRatio: hierarchy[path].lifeRatio,
+                children: null,
+                element: hierarchy[path],
+                level, depth: 0
+            };
+        } else {
+            const children = createTree(hierarchy[path], pack ? `${pack}.${path}` : path, level + 1);
+            return {
+                item: pack ? `${pack}.${path}` : path,
+                label: path, lifeRatio: Math.max(...children.map(c => c.lifeRatio)), children, level,
+                depth: Math.max(...children.map(c => c.depth)) + 1
+            };
+        }
+
+    })
 }
 
 export class DataManageSelectors {
-
-    static getSourceRoots(commitIndex: number) {
-        return createCachedSelector('getSourceRoots', createSelector([RepositoryState.getCommitElementsImmutable(commitIndex)], (elements) => {
-            const roots = new Set<string>();
-            Object.keys(elements).forEach(path => elements[path] && roots.add(elements[path].sourceRoot));
-            return [...roots];
-        }), commitIndex);
-    }
 
     static getFilteredElements(commitIndex: number) {
         return createCachedSelector('getFilteredElements', createSelector([

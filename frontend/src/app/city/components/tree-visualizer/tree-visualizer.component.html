@@ -6,14 +6,9 @@
                 {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
             </mat-icon>
         </button>
-        <mat-checkbox [checked]="descendantsAllSelected(node)" (change)="packageSelectionToggle(node)"
-                      (mouseenter)="focus.emit(node.item)"
-                      (mouseleave)="focus.emit(null)"
-                      [indeterminate]="descendantsPartiallySelected(node)">
-            <span [innerHTML]="highLight(node.label)"></span>
-        </mat-checkbox>
+        <span [innerHTML]="highLight(node.label)"></span>
         <button mat-icon-button class="crop-button" (click)="setRoot.emit(node.item)">
-            <mat-icon [inline]="true">details</mat-icon>
+            <mat-icon [inline]="true">folder</mat-icon>
         </button>
     </mat-tree-node>
 
@@ -22,12 +17,8 @@
                    [class.hidden]="!isNodeSatisfySearch(node)"
                    matTreeNodePadding [matTreeNodePaddingIndent]="15">
         <button class="toggle-button" mat-icon-button disabled></button>
-        <mat-checkbox class="checklist-leaf-node"
-                      (mouseenter)="focus.emit(node.item)"
-                      (mouseleave)="focus.emit(null)"
-                      [checked]="selectedNodes.has(node.item)" (change)="classSelectionToggle(node)">
-            <span [innerHTML]="highLight(node.label)"></span>
-        </mat-checkbox>
+
+        <span [innerHTML]="highLight(node.label)"></span>
         <button mat-icon-button class="crop-button" (click)="details.emit(node.item)">
             <mat-icon [inline]="true">description</mat-icon>
         </button>

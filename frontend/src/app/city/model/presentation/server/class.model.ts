@@ -1,4 +1,5 @@
 import { ElementModel } from "./element.model";
+import { MethodModel } from "./method.model";
 
 export interface ClassModel extends ElementModel {
     type: 'CLASS'
@@ -6,4 +7,5 @@ export interface ClassModel extends ElementModel {
     attributesCount: number;
     superClass: string;
     implementedTypes: string[];
+    methods?: MethodModel[];
 }

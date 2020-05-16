@@ -7,6 +7,11 @@ public class InterfaceNode extends Element {
     private int methodsCount;
     private int attributesCount;
     private final List<String> implementedTypes = new ArrayList<>();
+    private final List<Method> methods = new ArrayList<>();
+
+    public List<Method> getMethods() {
+        return methods;
+    }
 
     public List<String> getImplementedTypes() {
         return implementedTypes;

@@ -3,7 +3,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { delay, finalize, tap } from "rxjs/operators";
 import { append, patch, removeItem } from "@ngxs/store/operators";
-import { RepositoryInfo } from "../model/server-model/repository-info.model";
+import { RepositoryInfo } from "../model/presentation/server/repository-info.model";
 
 export class LoadList {
     static readonly type = '[Repositories] load list';

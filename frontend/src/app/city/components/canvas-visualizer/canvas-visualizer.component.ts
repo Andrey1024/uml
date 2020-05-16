@@ -1,23 +1,21 @@
 import {
     AfterViewInit,
     ChangeDetectionStrategy,
-    Component,
+    Component, EventEmitter,
     Inject,
     Input,
     OnChanges,
-    OnInit, SimpleChanges,
+    OnInit, Output,
+    SimpleChanges,
     ViewChild
 } from '@angular/core';
-import { DisplayOptions, LayoutService } from '../../service/layout.service';
-import { Observable } from 'rxjs/internal/Observable';
-import { filter, map } from 'rxjs/operators';
-import { BehaviorSubject, combineLatest } from 'rxjs';
 import * as THREE from 'three';
-import { Actions, Select, Store } from "@ngxs/store";
-import { Focus, RepositoryState, SelectNodes } from "../../state/repository.state";
-import { Hierarchy } from "../../model/hierarchy.model";
 import { ItemNode } from "../../model/tree-item.model";
 import { ThreeDirective } from '../../directives/three.directive';
+import { DistrictVisualizer } from "../../model/visualizers/district-visualizer";
+import { IllustratorHelper } from "../../model/illustrators/illustrator";
+import { StreetsVisualizer } from "../../model/visualizers/streets-visualizer";
+import { Visualizer } from "../../services/visualizer";
 
 @Component({
     selector: 'uml-canvas-visualizer',
@@ -28,15 +26,23 @@ import { ThreeDirective } from '../../directives/three.directive';
 export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewInit {
     @ViewChild(ThreeDirective, { static: false }) three: ThreeDirective;
 
-    @Input() hierarchy: Hierarchy;
-    @Input() selected: string[];
+    @Input() tree: ItemNode[];
     @Input() layoutName: string;
     @Input() selectedElement: string;
-    @Input() displayOptions: DisplayOptions;
+    @Input() displayOptions;
 
-    data: THREE.Object3D[];
+    @Output() select = new EventEmitter<string>();
 
-    constructor(@Inject(LayoutService) private layouts: LayoutService[]) {
+    helper: IllustratorHelper;
+
+    data: THREE.Group;
+    drawingMesh: THREE.Object3D;
+    selectedMesh: THREE.Object3D;
+    highLightMesh: THREE.Object3D;
+
+    pickingMesh: THREE.Object3D;
+
+    constructor(@Inject(Visualizer) private layouts: Visualizer[]) {
 
     }
 
@@ -44,14 +50,46 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes.hierarchy || changes.displayOptions || changes.layoutName) {
-            this.data = this.layouts.find(layout => layout.name === this.layoutName)
-                .place(this.hierarchy, this.displayOptions);
+        if ((changes.tree || changes.displayOptions || changes.layoutName) && this.tree.length) {
+            const visualizer = this.layouts.find(l => l.name === this.layoutName);
+            this.helper = visualizer.visualize(this.tree, this.displayOptions);
+            this.data = new THREE.Group()
+            this.drawingMesh = this.helper.getTreeMesh();
+            this.pickingMesh = this.helper.getPickingMesh();
+            this.data.add(this.drawingMesh);
+            // this.data = this.layouts.find(layout => layout.name === this.layoutName)
+            //     .place(this.hierarchy, this.displayOptions);
+        }
+        if (changes.selectedElement) {
+            if (this.selectedMesh) {
+                this.data.remove(this.selectedMesh);
+                this.selectedMesh = null;
+            }
+            if (this.selectedElement) {
+                this.selectedMesh = this.helper.createHighLightMesh(this.selectedElement, 'green');
+                this.data.add(this.selectedMesh);
+            }
         }
     }
 
+    addHighLight(id: number) {
+        if (this.highLightMesh) {
+            this.data.remove(this.highLightMesh);
+            this.highLightMesh = null;
+        }
+        if (id !== 0) {
+            this.highLightMesh = this.helper.createHighLightMesh(this.helper.getNameByIndex(id), 'tomato');
+            this.data.add(this.highLightMesh);
+        }
+    }
+
+
     ngAfterViewInit() {
         this.three.resize()
+    }
+
+    selectElement(id: number) {
+        this.select.emit(this.helper.getNameByIndex(id));
     }
 
     public focusOnElement(el: string) {
