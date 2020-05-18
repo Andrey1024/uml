@@ -1,13 +1,16 @@
-import { Element } from "./presentation/server/element";
+import { Element, MemberElement, TypeElement } from "./presentation/server/element";
+import { VersionedElement } from "./versioning/versioned-element.model";
 
-export interface  ItemNode {
+export interface ItemNode {
     item: string,
     label: string,
-    lifeRatio: number,
     level: number;
     depth: number;
+    lifeRatio: number;
     children: ItemNode[],
-    element?: Element;
+    element?: VersionedElement<TypeElement>;
+    members?: VersionedElement<MemberElement>[];
+    authors?: { [email: string]: number }
 }
 
 /** Flat to-do item node with expandable and level information */

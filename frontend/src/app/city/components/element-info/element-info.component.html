@@ -9,30 +9,27 @@
                 {{ element.parentPackage }}
             </uml-element-info-property>
             <uml-element-info-property *ngIf="element.type === 'CLASS'" icon="home" label="Базовый класс">
-                <uml-element-link [hasLink]="element.superClass.hasLink"
-                                  [name]="element.superClass.name"
-                                  (link)="link.emit(element.superClass.link)"></uml-element-link>
+                <uml-element-link [hasLink]="!!links[element.superClass]"
+                                  [name]="links[element.superClass] || element.superClass"
+                                  (link)="link.emit(element.superClass)"></uml-element-link>
             </uml-element-info-property>
-            <uml-element-info-property *ngIf="element.descendant" icon="control_point_duplicate" label="Наследник">
-                <uml-element-link [hasLink]="true"
-                                  [name]="element.descendant.name"
-                                  (link)="link.emit(element.descendant.link)"></uml-element-link>
+            <uml-element-info-property *ngIf="element.type === 'CLASS' && element.descendant" icon="control_point_duplicate" label="Наследник">
+                <uml-element-link [hasLink]="true" [name]="links[element.descendant]"
+                                  (link)="link.emit(element.descendant)"></uml-element-link>
             </uml-element-info-property>
-            <uml-element-info-property *ngIf="element.implementedTypes && element.implementedTypes.length"
+            <uml-element-info-property *ngIf="(element.type === 'CLASS' || element.type === 'INTERFACE') && element.implementedTypes && element.implementedTypes.length"
                                        icon="widgets"
                                        [label]="element.type === 'CLASS' ? 'Реализуемые интерфейсы' : 'Расширяемые интерфейсы'">
                 <uml-element-link *ngFor="let impl of element.implementedTypes"
-                                  [hasLink]="impl.hasLink"
-                                  [name]="impl.name"
-                                  (link)="link.emit(impl.link)"></uml-element-link>
+                                  [hasLink]="!!links[impl]"
+                                  [name]="links[impl] || impl"
+                                  (link)="link.emit(impl)"></uml-element-link>
             </uml-element-info-property>
-            <uml-element-info-property *ngIf="element.implementators && element.implementators.length"
+            <uml-element-info-property *ngIf="element.type === 'INTERFACE' && element.implementers && element.implementers.length"
                                        icon="extension"
                                        label="Реализуют">
-                <uml-element-link *ngFor="let impl of element.implementators"
-                                  [hasLink]="true"
-                                  [name]="impl.name"
-                                  (link)="link.emit(impl.link)"></uml-element-link>
+                <uml-element-link *ngFor="let impl of element.implementers"
+                                  [hasLink]="true" [name]="links[impl] || impl" (link)="link.emit(impl)"></uml-element-link>
             </uml-element-info-property>
         </div>
         <!--        <div *ngIf="element.implementators && element.implementators.length">-->

@@ -15,7 +15,8 @@ import { ThreeDirective } from '../../directives/three.directive';
 import { DistrictVisualizer } from "../../model/visualizers/district-visualizer";
 import { IllustratorHelper } from "../../model/illustrators/illustrator";
 import { StreetsVisualizer } from "../../model/visualizers/streets-visualizer";
-import { Visualizer } from "../../services/visualizer";
+import { Visualizer, VisualizerOptions } from "../../services/visualizer";
+import { keyBy } from "lodash-es";
 
 @Component({
     selector: 'uml-canvas-visualizer',
@@ -24,12 +25,13 @@ import { Visualizer } from "../../services/visualizer";
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewInit {
+    private readonly visualizers: { [name: string]: Visualizer };
     @ViewChild(ThreeDirective, { static: false }) three: ThreeDirective;
 
     @Input() tree: ItemNode[];
-    @Input() layoutName: string;
+    @Input() method: string;
     @Input() selectedElement: string;
-    @Input() displayOptions;
+    @Input() options: VisualizerOptions;
 
     @Output() select = new EventEmitter<string>();
 
@@ -42,33 +44,28 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
 
     pickingMesh: THREE.Object3D;
 
-    constructor(@Inject(Visualizer) private layouts: Visualizer[]) {
-
+    constructor(@Inject(Visualizer) visualizers: Visualizer[]) {
+        this.visualizers = keyBy(visualizers, 'name');
     }
 
     ngOnInit() {
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        if ((changes.tree || changes.displayOptions || changes.layoutName) && this.tree.length) {
-            const visualizer = this.layouts.find(l => l.name === this.layoutName);
-            this.helper = visualizer.visualize(this.tree, this.displayOptions);
+        if ((changes.tree || changes.options || changes.method) && this.tree.length) {
+            this.helper = this.visualizers[this.method].visualize(this.tree, this.options);
             this.data = new THREE.Group()
             this.drawingMesh = this.helper.getTreeMesh();
             this.pickingMesh = this.helper.getPickingMesh();
             this.data.add(this.drawingMesh);
-            // this.data = this.layouts.find(layout => layout.name === this.layoutName)
-            //     .place(this.hierarchy, this.displayOptions);
         }
-        if (changes.selectedElement) {
-            if (this.selectedMesh) {
-                this.data.remove(this.selectedMesh);
-                this.selectedMesh = null;
-            }
-            if (this.selectedElement) {
-                this.selectedMesh = this.helper.createHighLightMesh(this.selectedElement, 'green');
-                this.data.add(this.selectedMesh);
-            }
+        if (this.selectedMesh) {
+            this.data.remove(this.selectedMesh);
+            this.selectedMesh = null;
+        }
+        if (this.selectedElement) {
+            this.selectedMesh = this.helper.createHighLightMesh(this.selectedElement, 'green');
+            this.data.add(this.selectedMesh);
         }
     }
 

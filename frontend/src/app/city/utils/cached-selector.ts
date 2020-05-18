@@ -5,7 +5,7 @@ export function Cached(selectorName: string): MethodDecorator {
         const originalMethod = descriptor.value;
 
         descriptor.value = function(...args: any[]) {
-            const selectorKey = `${selectorName};${args.map(a => a.toString()).join(';')}`;
+            const selectorKey = `${selectorName};${args.map(a => '' + a).join(';')}`;
             if (!cache.has(selectorKey)) {
                 cache.set(selectorKey, originalMethod.apply(this, arguments));
             }

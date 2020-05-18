@@ -43,8 +43,8 @@ public class UmlController {
         return new RepositoryInfo(body.getName().toLowerCase(), body.getUrl());
     }
 
-    @GetMapping("/api/repository/{name}/")
-    public Map<String, Map<String, Integer>> getChangesAuthors(@PathVariable String name, @RequestParam String from, @RequestParam String to) throws IOException {
+    @GetMapping("/api/repository/{name}/{from}/{to}")
+    public Map<String, List<String>> getChangesAuthors(@PathVariable String name, @PathVariable String from, @PathVariable String to) throws IOException {
         return repositoryController.countChangesBetweenCommits(name, from, to);
     }
 

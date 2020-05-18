@@ -91,6 +91,7 @@ public class RepositoryController {
             revWalk.reset();
             RevCommit revCommit = revWalk.parseCommit(head.getObjectId());
             revWalk.sort(RevSort.COMMIT_TIME_DESC);
+            revWalk.setTreeFilter(AndTreeFilter.create(PathSuffixFilter.create(".java"), TreeFilter.ANY_DIFF));
             revWalk.markStart(revCommit);
             for (RevCommit commit : revWalk) {
                 PersonIdent personIdent = commit.getAuthorIdent();
@@ -110,14 +111,12 @@ public class RepositoryController {
     public Project parseCommit(String repoName, String commit) throws IOException {
         Repository repository = repositoryMap.get(repoName);
         ObjectId commitObg = repository.resolve(commit);
-        Map<String, Map<String, Integer>> fileChangesByAuthors = new HashMap<>();
         ClassExtractor extractor = new ClassExtractor();
         try (RevWalk revWalk = getRevWalk(repoName)) {
             revWalk.reset();
             RevCommit revCommit = revWalk.parseCommit(commitObg);
-            RevTree revTree = revCommit.getTree();
             TreeWalk treeWalk = new TreeWalk(repository);
-            treeWalk.addTree(revTree);
+            treeWalk.addTree(revCommit.getTree());
             treeWalk.setRecursive(true);
             treeWalk.setFilter(PathSuffixFilter.create(".java"));
 
@@ -125,22 +124,18 @@ public class RepositoryController {
                 ObjectLoader loader = repository.open(treeWalk.getObjectId(0));
                 String filePath = treeWalk.getPathString();
                 extractor.parseFile(filePath, loader.openStream());
-                fileChangesByAuthors.put(filePath, new HashMap<>());
             }
 
             treeWalk.close();
             revWalk.dispose();
         }
         List<Element> elements = extractor.getElements();
-        for (Element element : elements) {
-            element.setAuthors(fileChangesByAuthors.get(element.getFilePath()));
-        }
 
         return new Project(repoName, commit, elements);
     }
 
-    public Map<String, Map<String, Integer>> countChangesBetweenCommits(String repoName, String commitFrom, String commitTo) throws IOException {
-        Map<String, Map<String, Integer>> result = new HashMap<>();
+    public Map<String, List<String>> countChangesBetweenCommits(String repoName, String commitFrom, String commitTo) throws IOException {
+        Map<String, List<String>> result = new HashMap<>();
         Repository repository = repositoryMap.get(repoName);
         try (RevWalk revWalk = getRevWalk(repoName)) {
             revWalk.reset();
@@ -149,19 +144,22 @@ public class RepositoryController {
             revWalk.sort(RevSort.COMMIT_TIME_DESC);
 
             for (RevCommit revCommit : revWalk) {
-                String email = revCommit.getAuthorIdent().getEmailAddress();
+                String commit = revCommit.getName();
                 TreeWalk treeWalk = new TreeWalk(repository);
-                treeWalk.addTree(revCommit);
+                treeWalk.addTree(revCommit.getTree());
                 treeWalk.setRecursive(true);
                 treeWalk.setFilter(PathSuffixFilter.create(".java"));
 
                 while (treeWalk.next()) {
-                    result.getOrDefault(treeWalk.getPathString(), new HashMap<>()).merge(email, 1, Integer::sum);
+                    String path = treeWalk.getPathString();
+                    if (!result.containsKey(path)) result.put(path, new ArrayList<>());
+                    result.get(path).add(commit);
                 }
 
                 if (revCommit.getId().getName().equals(commitFrom)) {
                     break;
                 }
+                treeWalk.close();
             }
             revWalk.dispose();
         }

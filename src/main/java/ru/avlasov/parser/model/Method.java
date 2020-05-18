@@ -3,26 +3,17 @@ package ru.avlasov.parser.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Method {
-    private String name;
-    private int numberOfLines;
+public class Method extends Element {
+    private String parentClass;
     private String returnType;
     private final List<String> parameterTypes = new ArrayList<>();
 
-    public String getName() {
-        return name;
+    public String getParentClass() {
+        return parentClass;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public int getNumberOfLines() {
-        return numberOfLines;
-    }
-
-    public void setNumberOfLines(int numberOfLines) {
-        this.numberOfLines = numberOfLines;
+    public void setParentClass(String parentClass) {
+        this.parentClass = parentClass;
     }
 
     public String getReturnType() {
@@ -35,5 +26,10 @@ public class Method {
 
     public List<String> getParameterTypes() {
         return parameterTypes;
+    }
+
+    public Method() {
+        super();
+        setType("METHOD");
     }
 }

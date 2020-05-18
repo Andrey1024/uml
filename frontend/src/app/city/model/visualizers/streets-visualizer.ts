@@ -5,7 +5,7 @@ import { Visualizer } from "../../services/visualizer";
 
 export class StreetsVisualizer extends AbstractVisualizer implements Visualizer {
     public get name() {
-        return 'streets';
+        return 'EvoStreets';
     }
 
     protected illustratorClass = StreetsIllustrator;

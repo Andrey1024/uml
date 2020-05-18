@@ -5,7 +5,7 @@ import { Visualizer } from "../../services/visualizer";
 
 export class DistrictVisualizer extends AbstractVisualizer implements Visualizer {
     public get name() {
-        return 'district'
+        return 'Code City'
     }
 
     protected illustratorClass = DistrictIllustrator;

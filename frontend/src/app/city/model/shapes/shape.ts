@@ -14,7 +14,7 @@ export abstract class Shape {
 
     protected pickId: number;
 
-    protected padding = { xNeg: 0, xPos: 0, zNeg: 0, zPos: 0, yNeg: 0, yPos: 0 };
+    public padding = { xNeg: 0, xPos: 0, zNeg: 0, zPos: 0, yNeg: 0, yPos: 0 };
 
     public get dimensions(): Point {
         const dimensions = this.size;

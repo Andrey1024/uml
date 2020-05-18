@@ -127,7 +127,7 @@ public class ParsedTypeSolver implements TypeSolver {
             // We try just in the same package, for classes defined in a file not named as the class itself
             {
                 int lastDir = filePath.lastIndexOf("/");
-                if (lastDir != -1) {
+                if (lastDir > 0) {
                     List<CompilationUnit> compilationUnits = parseDirectory(filePath.substring(0, filePath.lastIndexOf("/") - 1));
                     for (CompilationUnit compilationUnit : compilationUnits) {
                         Optional<com.github.javaparser.ast.body.TypeDeclaration<?>> astTypeDeclaration = Navigator.findType(compilationUnit, typeName.toString());

@@ -20,13 +20,13 @@ registerLocaleData(localeRu);
     imports: [
         BrowserModule,
         HttpClientModule,
-        CityModule,
         RouterModule.forRoot([]),
         BrowserAnimationsModule,
         NgxsModule.forRoot([], {
             selectorOptions: { injectContainerState: false },
             developmentMode: !environment.production
         }),
+        CityModule,
         NgxsReduxDevtoolsPluginModule.forRoot({ disabled: environment.production }),
         MatToolbarModule,
         FlexLayoutModule

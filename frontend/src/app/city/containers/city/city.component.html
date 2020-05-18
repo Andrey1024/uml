@@ -1,14 +1,14 @@
 <div class="city" fxLayout="column">
     <nav mat-tab-nav-bar backgroundColor="primary" class="mat-elevation-z4">
-        <a mat-tab-link *ngFor="let layout of layoutNames"
-           (click)="selectedLayout$.next(layout)"
-           [active]="(selectedLayout$ | async) === layout">{{ layout }}</a>
+        <a mat-tab-link *ngFor="let layout of methods$ | async"
+           (click)="selectMethod(layout)"
+           [active]="(selectedMethod$ | async) === layout">{{ layout }}</a>
     </nav>
     <mat-sidenav-container fxFlex="1 0 auto">
         <mat-sidenav #commits class="commits-sidenav" [fixedInViewport]="true" [fixedTopGap]="64" [fixedBottomGap]="0">
             <uml-add-commits [commits]="commits$ | async"
-                             [loaded]="loadedCommits$ | async"
-                             [loading]="loadingCommits$ | async"
+                             [loaded]="versions$ | async"
+                             [loading]="[]"
                              (load)="loadCommitState($event)"></uml-add-commits>
         </mat-sidenav>
         <mat-sidenav [opened]="true" [disableClose]="true" position="end" mode="side" class="tree-sidenav">
@@ -19,44 +19,74 @@
                         <mat-option *ngFor="let root of sourceRoots$ | async" [value]="root">{{root}}</mat-option>
                     </mat-select>
                 </mat-form-field>
-                <!--                <mat-divider></mat-divider>-->
-                <mat-tab-group class="tree-tab-group" mat-align-tabs="center"
-                               (selectedIndexChange)="selectAuthorsView($event == 1)">
-                    <mat-tab label="Структура">
+                <mat-tab-group class="tree-tab-group" mat-align-tabs="center">
+                    <mat-tab label="Структура" #structureTab>
                         <div class="structure-tab-content" fxLayout="column">
                             <mat-form-field fxFlex="none">
                                 <mat-label>Поиск</mat-label>
                                 <input matInput [value]="search$ | async" (input)="updateSearch($event.target.value)">
                             </mat-form-field>
                             <div class="tree-container" fxFlex="1 0 30">
-                                <uml-tree-visualizer (setRoot)="setPath($event)"
-                                                     (focus)="focusNode($event)"
+                                <uml-tree-visualizer (setRoot)="selectPath($event)"
                                                      (details)="selectElement($event)"
-                                                     [selectedElement]="(selectedElement$ | async)?.fullPath"
+                                                     [selectedElement]="selectedElementName$ | async"
                                                      [searchString]="search$ | async"
                                                      [data]="treeItems$ | async"></uml-tree-visualizer>
                             </div>
                             <mat-divider></mat-divider>
-                            <uml-element-info fxFlex="none" *ngIf="selectedElement$ | async as element"
+                            <uml-element-info fxFlex="none" *ngIf="selectedElementName$ | async"
                                               (link)="selectElement($event)"
-                                              [element]="element"></uml-element-info>
+                                              [links]="elementNames$ | async"
+                                              [element]="selectedElement$ | async"></uml-element-info>
                         </div>
                     </mat-tab>
-                    <mat-tab label="Авторы">
+                    <mat-tab label="Сравнение версий" [disabled]="(versionCompareTo$ | async) === null" #compareTab>
                         <uml-authors-list [authors]="authors$ | async"
-                                          [selected]="selectedAuthors$ | async"
+                                          [ignored]="ignoredAuthors$ | async"
                                           [authorColors]="authorColors$ | async"
-                                          (select)="selectAuthors($event)"></uml-authors-list>
+                                          (ignore)="ignoreAuthors($event)"></uml-authors-list>
                     </mat-tab>
                 </mat-tab-group>
             </div>
         </mat-sidenav>
-        <mat-sidenav-content>
-            <uml-canvas-visualizer [tree]="treeItems$ | async"
-                                   [displayOptions]="options$ | async"
-                                   [selectedElement]="(selectedElement$ | async)?.fullPath"
-                                   [layoutName]="selectedLayout$ | async"
+        <mat-sidenav-content fxLayout="column">
+            <mat-toolbar class="mat-elevation-z4" fxFlex="none">
+                Детализация:
+                <mat-button-toggle-group class="detail-level-toggle"
+                                         (change)="selectDetailLevel($event.value)"
+                                         [value]="detailLevel$ | async">
+                    <mat-button-toggle value="method">Методы</mat-button-toggle>
+                    <mat-button-toggle value="class">Классы</mat-button-toggle>
+                </mat-button-toggle-group>
+                <mat-checkbox *ngIf="(versionCompareTo$ | async) !== null"
+                              class="authors-checkbox" [checked]="showAuthors$ | async"
+                              (change)="showAuthors($event.checked)">
+                    Отображать изменения авторами
+                </mat-checkbox>
+            </mat-toolbar>
+            <uml-canvas-visualizer fxFlex="1 0 auto" style="position: relative" [tree]="treeItems$ | async"
+                                   [options]="options$ | async"
+                                   [selectedElement]="selectedElementName$ | async"
+                                   [method]="selectedMethod$ | async"
                                    (select)="selectElement($event)"></uml-canvas-visualizer>
+            <ng-container *ngIf="compareVersions$ | async as compareTo">
+                <mat-toolbar *ngIf="compareTo.length" class="compare-bar" fxFlex="none" fxLayout="row"
+                             fxLayoutGap="10px">
+                    <button mat-icon-button fxFlex="none"
+                            [disabled]="(versionCompareTo$ | async) === null"
+                            (click)="selectCompareVersion(null)">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                    <mat-chip-list [multiple]="false">
+                        <mat-chip color="accent"
+                                  *ngFor="let commit of compareTo"
+                                  matTooltip="Версия для сравнения"
+                                  [selected]="commit.name === (versionCompareTo$ | async)"
+                                  (click)="selectCompareVersion(commit.name)"
+                                  [selectable]="false">{{ commit.date | date : "dd-MM-yyyy" }}</mat-chip>
+                    </mat-chip-list>
+                </mat-toolbar>
+            </ng-container>
         </mat-sidenav-content>
 
     </mat-sidenav-container>
@@ -66,9 +96,11 @@
         </button>
         <mat-chip-list [multiple]="false">
             <mat-chip color="accent"
-                      *ngFor="let commit of loadedCommits$ | async"
-                      (click)="selectCommit(commit)"
+                      *ngFor="let commit of versions$ | async"
+                      (click)="selectCommit(commit.name)"
                       [selected]="(selectedCommit$ | async) === commit.name"
+                      matTooltip="Отображаемая версия"
+                      [matTooltipDisabled]="(selectedCommit$ | async) !== commit.name"
                       [selectable]="false">{{ commit.date | date : "dd-MM-yyyy" }}</mat-chip>
         </mat-chip-list>
     </mat-toolbar>

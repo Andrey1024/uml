@@ -1,27 +1,35 @@
-import { ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, ViewChild } from '@angular/core';
 import { Actions, ofAction, Select, Store } from "@ngxs/store";
-import { BehaviorSubject, combineLatest, Observable, of } from "rxjs";
-import { Author, Commit } from "../../model/presentation/server/commit.model";
+import { combineLatest, Observable } from "rxjs";
+import { Commit } from "../../model/presentation/server/commit.model";
 import { ActivatedRoute } from "@angular/router";
-import { CommitsState, Load } from "../../state/commits.state";
 import {
-    AuthorView,
+    LoadChanges,
     LoadState,
+    OpenRepository,
     RepositoryState,
     SelectAuthors,
-    SelectCommit, SelectDetails,
+    SelectCommit, SelectCompareTo,
+    SelectDetails,
     SelectSourceRoot,
     SetRootPath,
     UpdateSearch
 } from "../../state/repository.state";
 import { ItemNode } from "../../model/tree-item.model";
-import { Hierarchy } from "../../model/hierarchy.model";
 import { CanvasVisualizerComponent } from "../../components/canvas-visualizer/canvas-visualizer.component";
-import { map, switchMap, tap } from "rxjs/operators";
-import { DataManageSelectors } from "../../state/data-manage.selectors";
+import { filter, switchMap, take, tap } from "rxjs/operators";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { Element } from "../../model/presentation/server/element";
-import { Visualizer } from "../../services/visualizer";
+import { VersionsState } from "../../state/versions.state";
+import {
+    IgnoreAuthors,
+    SelectDetailLevel,
+    SelectMethod,
+    ShowAuthors,
+    VisualizerState
+} from "../../state/visualizer.state";
+import { ElementConnections } from "../../model/presentation/element-connections";
+import { VisualizerOptions } from "../../services/visualizer";
+import { ById } from "../../model/by-id";
 
 @Component({
     selector: 'uml-city',
@@ -32,80 +40,81 @@ import { Visualizer } from "../../services/visualizer";
 export class CityComponent implements OnInit {
     @ViewChild(CanvasVisualizerComponent, { static: true }) canvas: CanvasVisualizerComponent;
 
-    @Select(RepositoryState.getCommitIndex)
+    @Select(VisualizerState.getMethods)
+    methods$: Observable<string[]>;
+
+    @Select(VisualizerState.getVisualizerOptions)
+    options$: Observable<VisualizerOptions>;
+
+    @Select(VisualizerState.getSelectedMethod)
+    selectedMethod$: Observable<string>;
+
+    @Select(RepositoryState.getSelectedVersionIndex)
     commitIndex$: Observable<number>;
 
-    @Select(CommitsState.getRepositoryName)
-    name$: Observable<string>
+    @Select(RepositoryState.getRepository)
+    name$: Observable<string>;
 
-    @Select(RepositoryState.getAuthorsWithCount)
-    authors$: Observable<{ author: Author, count: number }[]>;
-
-    @Select(CommitsState.getAllCommitsDesc)
+    @Select(VersionsState.getCommitsDesc)
     commits$: Observable<Commit[]>;
 
-    @Select(CommitsState.isLoaded)
-    isLoaded$: Observable<boolean>;
+    @Select(VersionsState.getVersionCommits)
+    versions$: Observable<Commit[]>;
 
-    @Select(RepositoryState.getLoadedCommits)
-    loadedCommits$: Observable<Commit[]>;
-
-    @Select(RepositoryState.getLoadingCommits)
-    loadingCommits$: Observable<Commit[]>;
-
-
-    treeItems$: Observable<ItemNode[]> = this.commitIndex$.pipe(
-        switchMap(i => this.store.select(DataManageSelectors.getTreeItems(i)))
-    );
-
-    hierarchy$: Observable<Hierarchy> = this.commitIndex$.pipe(
-        switchMap(i => this.store.select(DataManageSelectors.getHierarchySlice(i)))
-    );
-
-    @Select(RepositoryState.getSelectedCommit)
+    @Select(RepositoryState.getSelectedVersion)
     selectedCommit$: Observable<string>;
 
-    @Select(RepositoryState.getSelectedAuthors)
-    selectedAuthors$: Observable<string[]>;
+    @Select(RepositoryState.getVersionCompareTo)
+    versionCompareTo$: Observable<string>;
 
-    sourceRoots$: Observable<any> = this.commitIndex$.pipe(
-        switchMap(i => this.store.select(RepositoryState.getSourceRoots(i)))
-    );
+    @Select(RepositoryState.getSelectedElementName)
+    selectedElementName$: Observable<string>;
 
-    @Select(RepositoryState.getSourceRoot)
+    @Select(RepositoryState.getSelectedSourceRoot)
     sourceRoot$: Observable<string>
-
-    @Select(RepositoryState.getDisplayOptions)
-    options$: Observable<any>;
-
-    @Select(CommitsState.getAuthorsHSL)
-    authorColors$: Observable<{ [email: string]: number }>;
 
     @Select(RepositoryState.getSearch)
     search$: Observable<string>;
 
-    selectedElement$: Observable<Element> = this.commitIndex$.pipe(
-        switchMap(i => this.store.select(RepositoryState.getSelectedElement(i)))
-    );
+    @Select(VisualizerState.getDetailLevel)
+    detailLevel$: Observable<'method' | 'class'>;
 
-    layoutNames = this.layouts.map(layout => layout.name);
-    selectedLayout$ = new BehaviorSubject<string>(this.layoutNames[0]);
+    @Select(RepositoryState.getCompareToIndex)
+    compareToIndex$: Observable<number>;
 
+    @Select(VisualizerState.areAuthorsShown)
+    showAuthors$: Observable<boolean>;
 
+    @Select(RepositoryState.getAuthorsWithCount)
+    authors$: Observable<any>;
 
+    @Select(VisualizerState.getIgnoredAuthors)
+    ignoredAuthors$: Observable<string[]>;
+
+    @Select(VisualizerState.getAuthorColors)
+    authorColors$: Observable<ById<number>>
+
+    treeItems$: Observable<ItemNode[]> = combineLatest([this.commitIndex$, this.compareToIndex$]).pipe(
+        switchMap(([i, c]) => this.store.select(RepositoryState.getSelectedTree(i, c))));
+
+    selectedElement$: Observable<ElementConnections> = this.commitIndex$.pipe(switchMap(i => this.store.select(RepositoryState.getElementDetails(i))));
+
+    sourceRoots$: Observable<string[]> = this.commitIndex$.pipe(switchMap(i => this.store.select(RepositoryState.getSourceRoots(i))));
+
+    elementNames$: Observable<ById<string>> = this.commitIndex$.pipe(switchMap(i => this.store.select(RepositoryState.getElementList(i))));
+
+    compareVersions$: Observable<Commit[]> = this.commitIndex$.pipe(switchMap(i => this.store.select(RepositoryState.getVersionsToCompare(i))));
 
     constructor(private store: Store,
                 private route: ActivatedRoute,
-                private snackBar: MatSnackBar,
                 private actions: Actions,
-                @Inject(Visualizer) private layouts: Visualizer[]) {
-        this.selectedLayout$.next(layouts[0].name);
+                private snackBar: MatSnackBar) {
         this.actions.pipe(
             ofAction(LoadState),
             tap(() => {
-                const loading = this.store.selectSnapshot(RepositoryState.getLoadingCommits);
-                if (loading.length > 0) {
-                    this.snackBar.open(`Выполняется загрузка ${loading.length} версий`, null,
+                const loading = this.store.selectSnapshot(RepositoryState.getLoadingCount);
+                if (loading > 0) {
+                    this.snackBar.open(`Выполняется загрузка ${loading} версий`, null,
                         { horizontalPosition: "center", verticalPosition: "top", panelClass: 'toast-message' });
                 } else {
                     this.snackBar.dismiss();
@@ -115,14 +124,11 @@ export class CityComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.route.paramMap.subscribe(params => this.store.dispatch(new Load(params.get("name"))).subscribe(() => {
-            const commits = this.store.selectSnapshot(CommitsState.getAllCommits);
-            this.store.dispatch([new LoadState(commits[commits.length - 1].name)]);
-        }));
+        this.route.paramMap.subscribe(params => this.store.dispatch(new OpenRepository(params.get("name"))));
     }
 
-    selectCommit(commit: Commit) {
-        this.store.dispatch(new SelectCommit(commit.name));
+    selectCommit(commit: string) {
+        this.store.dispatch(new SelectCommit(commit));
     }
 
     selectAuthors(authors: string[]) {
@@ -137,23 +143,37 @@ export class CityComponent implements OnInit {
         this.store.dispatch(new SelectSourceRoot(root));
     }
 
-    selectAuthorsView(showAuthors: boolean) {
-        this.store.dispatch(new AuthorView(showAuthors));
+    selectPath(path: string) {
+        this.store.dispatch(new SetRootPath(path));
     }
 
-    setPath(path: string) {
-        this.store.dispatch(new SetRootPath(path));
+    selectMethod(method: string) {
+        this.store.dispatch(new SelectMethod(method));
     }
 
     updateSearch(search: string) {
         this.store.dispatch(new UpdateSearch(search))
     }
 
-    focusNode(node: string) {
-        this.canvas.focusOnElement(node);
+    selectElement(name: string) {
+        this.elementNames$.pipe(take(1), filter(names => !!names[name])).subscribe(
+            () => this.store.dispatch(new SelectDetails(name))
+        );
     }
 
-    selectElement(name: string) {
-        this.store.dispatch(new SelectDetails(name));
+    selectDetailLevel(level) {
+        this.store.dispatch(new SelectDetailLevel(level));
+    }
+
+    selectCompareVersion(version: string) {
+        this.store.dispatch(new SelectCompareTo(version));
+    }
+
+    showAuthors(flag: boolean) {
+        this.store.dispatch(new ShowAuthors(flag));
+    }
+
+    ignoreAuthors(ignored: string[]) {
+        this.store.dispatch(new IgnoreAuthors(ignored));
     }
 }

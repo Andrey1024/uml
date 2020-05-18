@@ -35,7 +35,6 @@ import { AddRepoDialogComponent } from './components/add-repo-dialog/add-repo-di
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
-import * as THREE from 'three';
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { ElementInfoComponent } from './components/element-info/element-info.component';
 import { ElementInfoPropertyComponent } from './components/element-info-property/element-info-property.component';
@@ -44,6 +43,8 @@ import { Visualizer } from "./services/visualizer";
 import { DistrictVisualizer } from "./model/visualizers/district-visualizer";
 import { StreetsVisualizer } from "./model/visualizers/streets-visualizer";
 import { VersionsState } from "./state/versions.state";
+import { VisualizerState } from "./state/visualizer.state";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 
 @NgModule({
@@ -59,7 +60,7 @@ import { VersionsState } from "./state/versions.state";
         MatTreeModule,
         MatToolbarModule,
         MatSliderModule,
-        NgxsModule.forFeature([RepositoryState, VersionsState, RepositoriesState]),
+        NgxsModule.forFeature([RepositoryState, VersionsState, RepositoriesState, VisualizerState]),
         MatCheckboxModule,
         MatCardModule,
         MatButtonModule,
@@ -69,6 +70,7 @@ import { VersionsState } from "./state/versions.state";
         MatProgressBarModule,
         MatChipsModule,
         MatListModule,
+        MatTooltipModule,
         MatProgressSpinnerModule,
         MatSnackBarModule,
         RouterModule.forChild([

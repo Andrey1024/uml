@@ -27,9 +27,13 @@ export class Strip extends Container {
         let offset = 0;
         const stripDimensions = this.size;
         for (const object of this.children) {
-            const { x, y, z } = object.dimensions;
-            object.andTranslate((x - stripDimensions.x) / 2 + offset, (y - stripDimensions.y) / 2, (z - stripDimensions.z) / 2);
-            offset += x;
+            const padding = object.padding, size = object.size, dimensions = object.dimensions;
+            object.andTranslate(
+                (size.x - stripDimensions.x) / 2 + padding.xNeg + offset,
+                (size.y - stripDimensions.y) / 2 + padding.yNeg,
+                (size.z - stripDimensions.z) / 2 + padding.zNeg
+            );
+            offset += dimensions.x;
         }
     }
 }

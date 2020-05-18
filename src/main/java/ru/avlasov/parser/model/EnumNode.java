@@ -1,6 +1,6 @@
 package ru.avlasov.parser.model;
 
-public class EnumNode extends Element {
+public class EnumNode extends TypeNode {
     private int numberOfConstants;
 
     public int getNumberOfConstants() {

@@ -1,7 +1,7 @@
-import { ElementModel } from "./element.model";
 import { MethodModel } from "./method.model";
+import { TypeModel } from "./type.model";
 
-export interface InterfaceModel extends ElementModel {
+export interface InterfaceModel extends TypeModel {
     type: 'INTERFACE';
     methodsCount: number;
     attributesCount: number;

@@ -1,17 +1,22 @@
 import { Action, createSelector, Selector, State, StateContext, Store } from '@ngxs/store';
 import { HttpClient } from "@angular/common/http";
-import { finalize, tap } from "rxjs/operators";
+import { tap } from "rxjs/operators";
 import { Injectable } from "@angular/core";
-import { Element } from "../model/presentation/server/element";
-import { iif, insertItem, patch, removeItem } from "@ngxs/store/operators";
-import { keyBy, map, mapValues } from "lodash-es";
+import { MemberElement, TypeElement } from "../model/presentation/server/element";
+import { iif, patch } from "@ngxs/store/operators";
 import { Author, Commit } from "../model/presentation/server/commit.model";
-import { InterfaceModel } from "../model/presentation/server/interface.model";
-import { DataManageSelectors } from "./data-manage.selectors";
-import { AddCommitData, AddCommits, VersionsState } from "./versions.state";
+import { AddChangesData, AddCommitData, AddCommits, VersionsState } from "./versions.state";
 import { VersionedElement } from "../model/versioning/versioned-element.model";
 import { Cached } from "../utils/cached-selector";
 import { ProjectModel } from "../model/presentation/server/project.model";
+import { createTree } from "../model/presentation/patchers/create-tree";
+import { ItemNode } from "../model/tree-item.model";
+import { ClassConnections } from "../model/presentation/class-connections";
+import { InterfaceConnections } from "../model/presentation/interface-connections";
+import { EnumModel } from "../model/presentation/server/enum.model";
+import { ElementConnections } from "../model/presentation/element-connections";
+import { ById } from "../model/by-id";
+import { mapValues } from "lodash-es";
 
 export class OpenRepository {
     static readonly type = '[Repository] open';
@@ -25,6 +30,11 @@ export class LoadState {
 
     constructor(public commit: string) {
     }
+}
+
+export class LoadChanges {
+    static readonly type = '[Repository] loadChanges';
+
 }
 
 export class SelectCommit {
@@ -84,167 +94,190 @@ export class SelectDetails {
     }
 }
 
+export class SelectCompareTo {
+    static readonly type = '[Repository] select compare version';
+
+    constructor(public compareStart: string) {
+    }
+}
+
+
 export interface RepositoryStateModel {
     repository: string;
-    sourceRoot: string;
     search: string;
-    path: string;
-    commit: string;
-    highLight: string;
-    selectedDetails: string;
-}
-
-function areListsEqual(arr1: string[], arr2: string[]) {
-    return arr1.length === arr2.length && arr2.every(i => arr1.includes(i));
-}
-
-function getDiff(obj1: Element, obj2: Element): Partial<Element> {
-    const oddFields = ['lifeSpan', "lifeRatio"];
-    if (!obj1) {
-        return obj2;
-    }
-    const diff = {};
-    for (const key in obj2) {
-        if (key === 'implementedTypes' || key === 'extendedTypes') {
-            if (!areListsEqual(obj1[key], obj2[key])) {
-                diff[key] = obj2[key];
-            }
-        }
-
-        if (obj2[key] !== obj1[key]) {
-            diff[key] = obj2[key];
-        }
-    }
-    return diff;
+    selectedSourceRoot: string;
+    selectedPath: string;
+    selectedVersion: string;
+    selectedElement: string;
+    compareStart: string;
+    loadingCount: number;
 }
 
 @State<RepositoryStateModel>({
     name: 'repository',
     defaults: {
         repository: null,
-        sourceRoot: "",
-        path: "",
-        commit: null,
-        highLight: null,
+        selectedSourceRoot: '',
+        selectedPath: '',
+        selectedVersion: null,
         search: '',
-        selectedDetails: null
+        selectedElement: null,
+        compareStart: null,
+        loadingCount: 0
     }
 })
 @Injectable()
 export class RepositoryState {
     @Selector([RepositoryState])
     static getSelectedElementName(state: RepositoryStateModel): string {
-        return state.selectedDetails;
+        return state.selectedElement;
     }
 
     @Selector([RepositoryState])
-    static getRootPath(state: RepositoryStateModel) {
-        return state.path;
+    static getRepository(state: RepositoryStateModel): string {
+        return state.repository;
     }
 
     @Selector([RepositoryState])
-    static getSelectedCommit(state: RepositoryStateModel) {
-        return state.commit;
+    static getLoadingCount(state: RepositoryStateModel): number {
+        return state.loadingCount;
+    }
+
+    @Selector([RepositoryState])
+    static getSelectedSourceRoot(state: RepositoryStateModel): string {
+        return state.selectedSourceRoot;
     }
 
 
     @Selector([RepositoryState])
-    static getSourceRoot(state: RepositoryStateModel) {
-        return state.sourceRoot;
+    static getSelectedPath(state: RepositoryStateModel): string {
+        return state.selectedPath;
     }
 
-    // static getSelectedElement(commitIndex: number) {
-    //     return createSelector(
-    //         [VersionsState.getDataAtCommit(commitIndex), this.getSelectedElementName],
-    //         (elements: { [path: string]: VersionedElement<Element> }, name) => {
-    //             if (name === null || !elements[name]) {
-    //                 return null;
-    //             }
-    //             const result: any = { ...elements[name] };
-    //             if (result.type === 'CLASS' || result.type === 'INTERFACE') {
-    //                 result.implementedTypes = result.implementedTypes.map(i => {
-    //                     const ref = elements[i]
-    //                     return {
-    //                         name: ref ? ref.name : i,
-    //                         hasLink: !!ref, link: ref ? ref.fullPath : null
-    //                     }
-    //                 });
-    //             }
-    //             if (result.type === 'CLASS') {
-    //                 const ref = elements[result.superClass];
-    //                 const child = Object.values(elements)
-    //                     .filter(e => e !== null).find(e => e.type === "CLASS" && e.superClass === name);
-    //                 result.superClass = {
-    //                     name: ref ? ref.name : result.superClass,
-    //                     hasLink: !!ref,
-    //                     link: ref ? ref.fullPath : null
-    //                 };
-    //                 if (child) {
-    //                     result.descendant = { name: child.name, link: child.fullPath };
-    //                 }
-    //             }
-    //             if (result.type === 'INTERFACE') {
-    //                 const children = Object.values(elements).filter(e => e !== null)
-    //                     .filter(c => (c.type === 'CLASS' || c.type === 'INTERFACE') && c.implementedTypes.includes(name));
-    //                 if (children.length) {
-    //                     result.implementators = children.map(e => ({
-    //                         name: e.name,
-    //                         hasLink: true, link: e.fullPath
-    //                     }));
-    //                 }
-    //             }
-    //             return result;
-    //         });
-    // }
-    //
-    // @Selector([RepositoryState.getSelectedCommit, CommitsState.getAllCommits, CommitsState.getAuthorsByEmail])
-    // static getAuthorsWithCount(commit: string, commits: Commit[], authorsByEmail): { author: Author, count: number }[] {
-    //     if (commit === null) return [];
-    //     const authors = new Map<string, number>();
-    //     let i = 0
-    //     do {
-    //         const author = commits[i].author.email;
-    //         authors.set(author, authors.has(author) ? authors.get(author) + 1 : 1);
-    //     } while (commits[i++].name !== commit);
-    //     return [...authors.keys()].map(author => ({ author: authorsByEmail[author], count: authors.get(author) }))
-    //         .sort((a, b) => b.count - a.count);
-    // }
+
+    @Selector([RepositoryState])
+    static getSelectedVersion(state: RepositoryStateModel): string {
+        return state.selectedVersion;
+    }
+
+    @Selector([RepositoryState])
+    static getVersionCompareTo(state: RepositoryStateModel): string {
+        return state.compareStart;
+    }
+
+
+    @Selector([RepositoryState.getVersionCompareTo, VersionsState.getVersions])
+    static getCompareToIndex(version: string, versions: string[]): number {
+        return version === null ? null : versions.indexOf(version);
+    }
+
+
+    @Selector([RepositoryState.getSelectedVersion, VersionsState.getVersions])
+    static getSelectedVersionIndex(version: string, versions: string[]): number {
+        return versions.indexOf(version)
+    }
 
     @Cached('sourceRoots')
-    static getSourceRoots(commitIndex: number) {
-        createSelector([VersionsState.getDataAtCommit(commitIndex)], (elements) => {
-            const roots = new Set<string>();
-            Object.keys(elements).forEach(path => elements[path] && roots.add(elements[path].data.sourceRoot));
+    static getSourceRoots(commitIndex: number): (...args: any[]) => string[] {
+        return createSelector([VersionsState.getTypesDataAtCommit(commitIndex)], (elements: { [name: string]: VersionedElement<TypeElement> }) => {
+            const roots = new Set<string>(Object.values(elements).map(e => e.data.sourceRoot));
             return [...roots];
         });
     }
 
+    @Cached('elementList')
+    static getElementList(commitIndex: number): (...args: any[]) => ById<string> {
+        return createSelector([VersionsState.getTypesDataAtCommit(commitIndex)], (elements: { [name: string]: VersionedElement<TypeElement> }) => {
+            return mapValues(elements, e => e.data.name);
+        });
+    }
+
     @Selector([RepositoryState])
-    static getSearch(state: RepositoryStateModel) {
+    static getSearch(state: RepositoryStateModel): string {
         return state.search;
     }
 
-    //
-    // @Selector([RepositoryState])
-    // static getCommitIndex(state: RepositoryStateModel) {
-    //     return state.loadedCommits.indexOf(state.commit);
-    // }
+    @Selector([RepositoryState.getSelectedVersion, RepositoryState.getVersionCompareTo, VersionsState.getCommitsAsc])
+    static getAuthorsWithCount(to: string, from: string, commits: Commit[]): { author: Author, count: number }[] {
+        if (from === null) return [];
+        const start = commits.findIndex(c => c.name === from);
+        const end = commits.findIndex(c => c.name === to);
+        const authors = new Map<string, number>();
+        const authorsMap = new Map<string, Author>();
 
-
-    @Selector([RepositoryState])
-    static getHighLight(state: RepositoryStateModel) {
-        return state.highLight;
+        for (let i = start; i < end; i++) {
+            const author = commits[i].author;
+            authorsMap.set(author.email, author);
+            authors.set(author.email, authors.has(author.email) ? authors.get(author.email) + 1 : 1);
+        }
+        return [...authors.keys()].map(author => ({ author: authorsMap.get(author), count: authors.get(author) }))
+            .sort((a, b) => b.count - a.count);
     }
 
+    @Cached('elementDetails')
+    static getElementDetails(commitIndex: number): (...args: any[]) => ElementConnections {
+        return createSelector(
+            [this.getSelectedElementName, VersionsState.getTypesDataAtCommit(commitIndex)],
+            (name: string, data: { [name: string]: VersionedElement<TypeElement> }): ClassConnections | InterfaceConnections | EnumModel => {
+                if (!name) {
+                    return null;
+                }
+                const result: ClassConnections | InterfaceConnections | EnumModel = { ...data[name].data };
 
-    constructor(private http: HttpClient) {
+                if (result.type === 'CLASS') {
+                    const descendant = Object.values(data)
+                        .find(({ data }) => data.type === 'CLASS' && data.superClass === name);
+                    if (descendant !== undefined) {
+                        result.descendant = descendant.data.fullPath;
+                    }
+                }
+                if (result.type === 'INTERFACE') {
+                    const implementers = Object.values(data)
+                        .filter(({ data }) => (data.type === 'CLASS' || data.type === 'INTERFACE') && data.implementedTypes.includes(name));
+                    if (implementers.length) {
+                        result.implementers = implementers.map(e => e.data.fullPath);
+                    }
+                }
+                return result;
+            })
+    }
+
+    @Cached('selectedTree')
+    static getSelectedTree(commitIndex: number, compareTo: number = null): (...args: any[]) => ItemNode[] {
+        return createSelector([
+                VersionsState.getTypesDataAtCommit(commitIndex, compareTo),
+                VersionsState.getMembersDataAtCommit(commitIndex, compareTo),
+                this.getSelectedSourceRoot,
+                this.getSelectedPath
+            ], (data: { [name: string]: VersionedElement<TypeElement> },
+                members: { [name: string]: VersionedElement<MemberElement> },
+                sourceRoot: string, path: string) =>
+                createTree(Object.values(data)
+                        .filter(e => e !== null)
+                        .filter(e => e.data.sourceRoot === sourceRoot)
+                        .filter(e => e.data.fullPath.startsWith(path)),
+                    Object.values(members)
+                )
+        )
+    }
+
+    @Cached('versionsToCompare')
+    static getVersionsToCompare(commitIndex: number): (...args: any[]) => Commit[] {
+        return createSelector(
+            [VersionsState.getVersionCommits],
+            (versions: Commit[]) => versions.slice(0, commitIndex)
+        );
+    }
+
+    constructor(private http: HttpClient, private store: Store) {
     }
 
     @Action(OpenRepository)
-    openRepository(ctx: StateContext<RepositoryStateModel>, {name}: OpenRepository) {
-        ctx.patchState({repository: name});
+    openRepository(ctx: StateContext<RepositoryStateModel>, { name }: OpenRepository) {
+        ctx.patchState({ repository: name });
         return this.http.get<Commit[]>(`/api/repository/${name}`).pipe(
-            tap(commits => ctx.dispatch(new AddCommits(commits)))
+            tap(commits => ctx.dispatch(new AddCommits(commits))),
+            tap(commits => ctx.dispatch(new LoadState(commits[0].name)))
         );
     }
 
@@ -252,31 +285,42 @@ export class RepositoryState {
     @Action(LoadState)
     loadState(ctx: StateContext<RepositoryStateModel>, { commit }: LoadState) {
         const { repository } = ctx.getState();
+        ctx.setState(patch({ loadingCount: i => i + 1 }));
         return this.http.get<ProjectModel>(`/api/repository/${repository}/${commit}`).pipe(
-            tap(result => ctx.dispatch(new AddCommitData(commit, result.data)))
-            // tap(({ data }) => {
-            //     if (this.store.selectSnapshot(RepositoryState.getLoadedCommitNames).length === 1) {
-            //         const allNodes = new Set([...map(data, 'fullPath'), ...map(data, 'parentPackage')]);
-            //         const sourceRoots = this.store.selectSnapshot(RepositoryState.getSourceRoots(0));
-            //         ctx.setState(patch({
-            //             selectedAuthors: map(this.store.selectSnapshot(RepositoryState.getAuthorsWithCount), 'author.email'),
-            //             selectedNodes: [...allNodes],
-            //             sourceRoot: sourceRoots[0]
-            //         }))
-            //     }
-            // })
+            tap(result => ctx.dispatch(new AddCommitData(commit, result.data))),
+            tap(() => ctx.getState().selectedVersion === null && ctx.dispatch(new SelectCommit(commit))),
+            tap(() => ctx.setState(patch({ loadingCount: i => i - 1 })), () => ctx.setState(patch({ loadingCount: i => i - 1 })))
         );
     }
 
+    @Action(LoadChanges)
+    loadChanges(ctx: StateContext<RepositoryStateModel>) {
+        const versions = this.store.selectSnapshot(VersionsState.getVersions);
+        const { repository } = ctx.getState();
+        return this.http.get<ById<string[]>>(`/api/repository/${repository}/${versions[0]}/${versions[versions.length - 1]}`).pipe(
+            tap(result => ctx.dispatch(new AddChangesData(result)))
+        );
+    }
 
     @Action(SelectCommit)
     selectCommit(ctx: StateContext<RepositoryStateModel>, { commit }: SelectCommit) {
-        setTimeout(() => ctx.patchState({ commit }));
+        const versions = this.store.selectSnapshot(VersionsState.getVersions);
+        const index = versions.indexOf(commit);
+
+        const sourceRoots = this.store.selectSnapshot(RepositoryState.getSourceRoots(index));
+        ctx.setState(patch({
+            selectedVersion: commit,
+            selectedSourceRoot: iif(root => sourceRoots.includes(root), r => r, sourceRoots[0]),
+            compareStart: iif(c => c !== null && versions.indexOf(c) < index, c => c, null)
+        }));
+        if (ctx.getState().compareStart !== null) {
+            ctx.dispatch(new LoadChanges());
+        }
     }
 
     @Action(SelectSourceRoot)
     selectSourceRoot(ctx: StateContext<RepositoryStateModel>, { sourceRoot }: SelectSourceRoot) {
-        ctx.patchState({ sourceRoot });
+        ctx.patchState({ selectedSourceRoot: sourceRoot });
     }
 
 
@@ -288,19 +332,19 @@ export class RepositoryState {
 
     @Action(SelectDetails)
     selectDetails(ctx: StateContext<RepositoryStateModel>, { element }: SelectDetails) {
-        ctx.patchState({ selectedDetails: element });
+        ctx.patchState({ selectedElement: element });
     }
 
     @Action(SetRootPath)
-    setRoot(ctx: StateContext<RepositoryStateModel>, { path }: SetRootPath) {
-        ctx.setState(patch({ path: iif(p => p === path, '', path) }));
+    selectPath(ctx: StateContext<RepositoryStateModel>, { path }: SetRootPath) {
+        ctx.setState(patch({ selectedPath: iif(p => p === path, '', path) }));
     }
 
-    @Action(Focus)
-    focusObject(ctx: StateContext<RepositoryStateModel>, { name }: Focus) {
-        if (ctx.getState().highLight !== name) {
-            ctx.patchState({ highLight: name });
+    @Action(SelectCompareTo)
+    selectCompareVersion(ctx: StateContext<RepositoryStateModel>, { compareStart }: SelectCompareTo) {
+        ctx.setState(patch({ compareStart }));
+        if (compareStart !== null) {
+            return ctx.dispatch(new LoadChanges());
         }
     }
-
 }

@@ -12,6 +12,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.*;
+import com.github.javaparser.resolution.types.ResolvedType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
@@ -57,8 +58,12 @@ public class ClassExtractor {
             for (String file : cus.keySet()) {
                 CompilationUnit cu = cus.get(file);
                 for (Element element : getAllElements(cu)) {
-                    element.setSourceRoot(sourceRoot);
-                    element.setFilePath(file);
+                    if (element.getType().equals("CLASS")
+                            || element.getType().equals("INTERFACE")
+                            || element.getType().equals("ENUM")) {
+                        ((TypeNode) element).setSourceRoot(sourceRoot);
+                        ((TypeNode) element).setFilePath(file);
+                    }
                     elements.add(element);
                 }
             }
@@ -77,35 +82,50 @@ public class ClassExtractor {
 
     private List<Element> getAllElements(CompilationUnit cu) {
         List<Element> elements = new ArrayList<>();
-        new VoidVisitorAdapter<Object>() {
+        new VoidVisitorAdapter<Element>() {
             public void visit(TypeDeclaration<?> declaration) {
                 Element element = createNode(declaration);
                 if (element == null) return;
-                if (declaration.getRange().isPresent()) {
+                if (declaration.getRange().isPresent())
                     element.setNumberOfLines(declaration.getRange().get().getLineCount());
-                }
                 elements.add(element);
             }
 
             @Override
-            public void visit(EnumDeclaration n, Object arg) {
+            public void visit(EnumDeclaration n, Element arg) {
                 visit(n);
-                super.visit(n, arg);
             }
 
             @Override
-            public void visit(ClassOrInterfaceDeclaration n, Object arg) {
-                visit(n);
-                super.visit(n, arg);
+            public void visit(ClassOrInterfaceDeclaration n, Element arg) {
+                Element node = createNode(n);
+                if (node == null) return;
+                if (n.getRange().isPresent()) node.setNumberOfLines(n.getRange().get().getLineCount());
+                elements.add(node);
+                super.visit(n, node);
+            }
+
+            @Override
+            public void visit(MethodDeclaration n, Element arg) {
+                if (arg == null) {
+                    return;
+                }
+                Method node = createMethodNode(n);
+                if (n.getRange().isPresent()) node.setNumberOfLines(n.getRange().get().getLineCount());
+                node.setParentClass(arg.getFullPath());
+                node.setFullPath(arg.getFullPath() + "." + node.getName());
+                ((InterfaceNode) arg).getMethods().add(node.getFullPath());
+                elements.add(node);
             }
         }.visit(cu, null);
         return elements;
     }
 
+
     private Element createNode(TypeDeclaration<?> declaration) {
         ResolvedReferenceTypeDeclaration resolved = declaration.resolve();
-        if (resolved.isEnum()) {
-            return createEnumNode(resolved.asEnum());
+        if (declaration.isEnumDeclaration()) {
+            return createEnumNode(declaration.asEnumDeclaration());
         } else if (resolved.isClass()) {
             return createClassNode(declaration.asClassOrInterfaceDeclaration());
         } else if (resolved.isInterface()) {
@@ -135,7 +155,6 @@ public class ClassExtractor {
         node.setMethodsCount(declaration.getMethods().size());
         node.setAttributesCount(declaration.getFields().size());
 
-        this.setMethods(declaration, node);
         return node;
     }
 
@@ -155,36 +174,50 @@ public class ClassExtractor {
         return node;
     }
 
-    private EnumNode createEnumNode(ResolvedEnumDeclaration declaration) {
+    private EnumNode createEnumNode(EnumDeclaration declaration) {
+        ResolvedEnumDeclaration resolved = declaration.resolve();
         EnumNode node = new EnumNode();
-        setSharedProperties(declaration, node);
-        node.setNumberOfConstants(declaration.getEnumConstants().size());
+        setSharedProperties(resolved, node);
+        node.setNumberOfConstants(resolved.getEnumConstants().size());
         return node;
     }
 
-
-    private void setMethods(ClassOrInterfaceDeclaration declaration, InterfaceNode node) {
-        for(MethodDeclaration method: declaration.getMethods()) {
-            Method methodNode = new Method();
-            methodNode.setNumberOfLines(method.getRange().get().getLineCount());
-            methodNode.setName(method.getNameAsString());
-            try {
-                ResolvedMethodDeclaration resolved = method.resolve();
-                methodNode.setReturnType(resolved.getReturnType().describe());
-                for (ResolvedTypeParameterDeclaration parameter: resolved.getTypeParameters()) {
-                    methodNode.getParameterTypes().add(parameter.getQualifiedName());
-                }
-            } catch (UnsolvedSymbolException e) {
-                methodNode.setReturnType(method.getTypeAsString());
+    private Method createMethodNode(MethodDeclaration method) {
+        Method methodNode = new Method();
+        methodNode.setName(method.getNameAsString());
+        try {
+            ResolvedMethodDeclaration resolved = method.resolve();
+            for (ResolvedTypeParameterDeclaration parameter : resolved.getTypeParameters()) {
+                methodNode.getParameterTypes().add(parameter.getQualifiedName());
             }
-            node.getMethods().add(methodNode);
-        }
-    }
 
-    private void setSharedProperties(ResolvedReferenceTypeDeclaration declaration, Element element) {
+        } catch (UnsolvedSymbolException e) {
+        }
+        methodNode.setReturnType(method.getTypeAsString());
+        return methodNode;
+    }
+//
+//    private void setMethods(ClassOrInterfaceDeclaration declaration, InterfaceNode node) {
+//        for(MethodDeclaration method: declaration.getMethods()) {
+//            Method methodNode = new Method();
+//            methodNode.setNumberOfLines(method.getRange().get().getLineCount());
+//            methodNode.setName(method.getNameAsString());
+//            try {
+//                ResolvedMethodDeclaration resolved = method.resolve();
+//                methodNode.setReturnType(resolved.getReturnType().describe());
+//                for (ResolvedTypeParameterDeclaration parameter: resolved.getTypeParameters()) {
+//                    methodNode.getParameterTypes().add(parameter.getQualifiedName());
+//                }
+//            } catch (UnsolvedSymbolException e) {
+//                methodNode.setReturnType(method.getTypeAsString());
+//            }
+//            node.getMethods().add(methodNode);
+//        }
+//    }
+
+    private void setSharedProperties(ResolvedReferenceTypeDeclaration declaration, TypeNode element) {
         element.setName(declaration.getName());
         element.setParentPackage(declaration.getPackageName());
         element.setFullPath(declaration.getQualifiedName());
     }
-
 }

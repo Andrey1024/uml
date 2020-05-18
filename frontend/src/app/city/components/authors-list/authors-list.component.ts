@@ -13,8 +13,8 @@ import { map } from "lodash-es";
 export class AuthorsListComponent implements OnInit {
     @Input() authors: { author: Author, count: number }[];
     @Input() authorColors: { [email: string]: number };
-    @Input() selected: string[];
-    @Output() select = new EventEmitter<string[]>();
+    @Input() ignored: string[];
+    @Output() ignore = new EventEmitter<string[]>();
 
     getHslString(email: string) {
         return `hsl(${this.authorColors[email]},100%,50%)`;
@@ -27,14 +27,14 @@ export class AuthorsListComponent implements OnInit {
     }
 
     areAllSelected(): boolean {
-        return this.authors.every(a => this.selected.includes(a.author.email));
+        return this.ignored.length === 0;
     }
 
     toggleAll() {
-        this.select.emit(this.areAllSelected() ? [] : map(this.authors, 'author.email'));
+        this.ignore.emit(this.areAllSelected() ? map(this.authors, 'author.email') : []);
     }
 
-    onSelect(options: SelectionModel<MatListOption>) {
-        this.select.emit(options.selected.map(o => o.value));
+    toggle(email: string) {
+        this.ignore.emit(this.ignored.includes(email) ? this.ignored.filter(v => v !== email) : [...this.ignored, email]);
     }
 }

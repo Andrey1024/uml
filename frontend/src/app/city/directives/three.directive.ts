@@ -54,7 +54,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
     private renderer = new THREE.WebGLRenderer({ alpha: true });
 
 
-    constructor( element: ElementRef<HTMLDivElement>,
+    constructor(private element: ElementRef<HTMLDivElement>,
                 private overlay: Overlay) {
         this.controls.onUnlock = () => this.moveBackward = this.moveForward = this.moveLeft = this.moveRight = false;
         // this.tooltipEl = document.createElement('div');

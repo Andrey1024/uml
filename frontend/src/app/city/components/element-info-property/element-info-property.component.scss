@@ -1,3 +1,7 @@
+:host {
+  max-width: 100%;
+}
+
 .property-label {
   font-size: 14px;
   color: rgba(0,0,0,.54);
@@ -15,4 +19,5 @@
 
 .property-value-wrapper {
   font-size: 16px;
+  overflow: hidden;
 }

@@ -3,13 +3,13 @@ package ru.avlasov.parser.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InterfaceNode extends Element {
+public class InterfaceNode extends TypeNode {
     private int methodsCount;
     private int attributesCount;
     private final List<String> implementedTypes = new ArrayList<>();
-    private final List<Method> methods = new ArrayList<>();
+    private final List<String> methods = new ArrayList<>();
 
-    public List<Method> getMethods() {
+    public List<String> getMethods() {
         return methods;
     }
 

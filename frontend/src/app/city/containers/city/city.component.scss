@@ -8,6 +8,10 @@
     width: 95%;
   }
 
+  .mat-chip:hover {
+    cursor: pointer;
+  }
+
   .mat-chip-list-wrapper {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -62,4 +66,16 @@
 
 .tree-container {
   overflow-y: auto;
+}
+
+.detail-level-toggle {
+  margin-left: 12px;
+}
+
+.compare-bar {
+  z-index: 9;
+}
+
+.authors-checkbox {
+  margin-left: 12px;
 }

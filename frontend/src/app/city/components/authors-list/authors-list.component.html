@@ -1,9 +1,9 @@
 <button mat-button class="toggle-all" (click)="toggleAll()">
     {{ areAllSelected() ? 'СНЯТЬ ВЫДЕЛЕНИЕ' : 'ВЫБРАТЬ ВСЕ' }}</button>
-<mat-selection-list (selectionChange)="onSelect($event.source.selectedOptions)">
+<mat-selection-list (selectionChange)="toggle($event.option.value)">
     <mat-list-option *ngFor="let author of authors"
                      [value]="author.author.email"
-                     [selected]="selected.includes(author.author.email)">
+                     [selected]="!ignored.includes(author.author.email)">
         <div matListAvatar [style.background]="getHslString(author.author.email)"></div>
         <h3 matLine>{{author.author.name}}</h3>
         <div matLine>Email: {{author.author.email}}</div>
