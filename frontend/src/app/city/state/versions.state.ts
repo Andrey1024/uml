@@ -51,6 +51,10 @@ export class AddCommits {
     }
 }
 
+export class Reset {
+    static readonly type = '[Versions] reset';
+}
+
 
 @State<VersionsStateModel>({
     name: 'versions',
@@ -252,5 +256,16 @@ export class VersionsState {
     @Action(AddCommits)
     addCommits(ctx: StateContext<VersionsStateModel>, { commits }: AddCommits) {
         ctx.setState(patch({ commits: s => ({ ...s, ...keyBy(commits, 'name') }) }));
+    }
+
+    @Action(Reset)
+    resetState(ctx: StateContext<VersionsStateModel>) {
+        ctx.setState({
+            data: {},
+            commits: {},
+            changes: null,
+            changesRange: null,
+            versions: []
+        })
     }
 }

@@ -1,7 +1,7 @@
-import { Strip } from "./strip";
 import { Shape } from "../shape";
 import { Point } from "../point";
 import { Container } from "./container";
+import { Row } from "./row";
 
 export class Grid extends Container {
     get size(): Point {
@@ -40,7 +40,7 @@ export class Grid extends Container {
     }
 
     private calculateGrid() {
-        this.addChild(new Strip());
+        this.addChild(new Row());
 
         let activeStrip: number = 0;
         const bestFit: { aspectDistance: number; strip: number; } = {
@@ -49,7 +49,7 @@ export class Grid extends Container {
         };
 
         while (this.objects.length) {
-            const strip = this.children[activeStrip] as Strip;
+            const strip = this.children[activeStrip] as Row;
             const object = this.objects.shift();
 
             if (!strip.dimensions.x || bestFit.strip === activeStrip) {
@@ -88,7 +88,7 @@ export class Grid extends Container {
                 }
 
                 if (isLastStrip && !gotoBestFit) {
-                    this.addChild(new Strip());
+                    this.addChild(new Row());
                 }
 
                 this.objects.unshift(object);

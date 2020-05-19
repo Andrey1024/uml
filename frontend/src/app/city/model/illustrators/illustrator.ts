@@ -17,13 +17,13 @@ export interface IllustratorHelper {
     createHighLightMesh(index: string, color: string): THREE.Mesh;
 }
 
-export abstract class Illustrator implements IllustratorHelper {
+export abstract class Illustrator<T extends Shape> implements IllustratorHelper {
 
-    public abstract createPackageShape(node: ItemNode, children: Container): Shape;
+    public abstract createPackageShape(node: ItemNode, children: T[]): T;
 
-    public abstract createElementShape(node: ItemNode, options: VisualizerOptions): Shape;
+    public abstract createElementShape(node: ItemNode, options: VisualizerOptions): T;
 
-    public abstract createRootShape(children: Container): Shape;
+    public abstract createRootShape(children: T[]): T;
 
     public abstract getTreeMesh(): THREE.Mesh;
 

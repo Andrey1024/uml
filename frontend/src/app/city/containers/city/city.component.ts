@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, ViewChild } from '@angular/core';
 import { Actions, ofAction, Select, Store } from "@ngxs/store";
-import { combineLatest, Observable } from "rxjs";
+import { BehaviorSubject, combineLatest, Observable } from "rxjs";
 import { Commit } from "../../model/presentation/server/commit.model";
 import { ActivatedRoute } from "@angular/router";
 import {
@@ -30,6 +30,7 @@ import {
 import { ElementConnections } from "../../model/presentation/element-connections";
 import { VisualizerOptions } from "../../services/visualizer";
 import { ById } from "../../model/by-id";
+import { Element } from "../../model/presentation/server/element";
 
 @Component({
     selector: 'uml-city',
@@ -38,6 +39,13 @@ import { ById } from "../../model/by-id";
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CityComponent implements OnInit {
+    readonly types = {
+        'CLASS': 'Класс',
+        'INTERFACE': 'Интерфейс',
+        'ENUM': 'Перечисление',
+        'METHOD': 'Метод'
+    }
+
     @ViewChild(CanvasVisualizerComponent, { static: true }) canvas: CanvasVisualizerComponent;
 
     @Select(VisualizerState.getMethods)
@@ -92,7 +100,7 @@ export class CityComponent implements OnInit {
     ignoredAuthors$: Observable<string[]>;
 
     @Select(VisualizerState.getAuthorColors)
-    authorColors$: Observable<ById<number>>
+    authorColors$: Observable<ById<number>>;
 
     treeItems$: Observable<ItemNode[]> = combineLatest([this.commitIndex$, this.compareToIndex$]).pipe(
         switchMap(([i, c]) => this.store.select(RepositoryState.getSelectedTree(i, c))));
@@ -104,6 +112,8 @@ export class CityComponent implements OnInit {
     elementNames$: Observable<ById<string>> = this.commitIndex$.pipe(switchMap(i => this.store.select(RepositoryState.getElementList(i))));
 
     compareVersions$: Observable<Commit[]> = this.commitIndex$.pipe(switchMap(i => this.store.select(RepositoryState.getVersionsToCompare(i))));
+
+    tooltipElement$ = new BehaviorSubject<Element>(null);
 
     constructor(private store: Store,
                 private route: ActivatedRoute,
@@ -121,6 +131,7 @@ export class CityComponent implements OnInit {
                 }
             })
         ).subscribe();
+        this.treeItems$.subscribe(console.log);
     }
 
     ngOnInit(): void {
@@ -175,5 +186,19 @@ export class CityComponent implements OnInit {
 
     ignoreAuthors(ignored: string[]) {
         this.store.dispatch(new IgnoreAuthors(ignored));
+    }
+
+    hoverElement(path: string) {
+        if (path === null) {
+            this.tooltipElement$.next(null);
+            return;
+        }
+        const index = this.store.selectSnapshot(RepositoryState.getSelectedVersionIndex);
+        const data = this.store.selectSnapshot(VersionsState.getDataAtCommit(index))[path];
+        if (!data) {
+            this.tooltipElement$.next(<any>{ type: 'PACKAGE', name: path });
+        } else {
+            this.tooltipElement$.next(data.data);
+        }
     }
 }

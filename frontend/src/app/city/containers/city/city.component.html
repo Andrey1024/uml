@@ -68,7 +68,9 @@
                                    [options]="options$ | async"
                                    [selectedElement]="selectedElementName$ | async"
                                    [method]="selectedMethod$ | async"
+                                   (hover)="hoverElement($event)"
                                    (select)="selectElement($event)"></uml-canvas-visualizer>
+            <uml-tooltip *ngIf="tooltipElement$ | async as tooltip" [data]="tooltip"></uml-tooltip>
             <ng-container *ngIf="compareVersions$ | async as compareTo">
                 <mat-toolbar *ngIf="compareTo.length" class="compare-bar" fxFlex="none" fxLayout="row"
                              fxLayoutGap="10px">

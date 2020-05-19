@@ -24,7 +24,7 @@ export function createTree(elements: VersionedElement<TypeElement>[], members: V
             if (hierarchy[path].data) {
                 const { data } = hierarchy[path];
                 return {
-                    item: data.fullPath, label: data.name, lifeRatio: data.lifeRatio,
+                    item: data.fullPath, label: data.name, lifeRatio: hierarchy[path].lifeRatio,
                     children: null, element: hierarchy[path],
                     members: members.filter(m => m.data.parentClass === data.fullPath),
                     level, depth: 0

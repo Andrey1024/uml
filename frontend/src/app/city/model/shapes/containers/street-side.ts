@@ -1,5 +1,6 @@
 import { Point } from "../point";
 import { Container } from "./container";
+import { Shape } from "../shape";
 
 export class StreetSide extends Container {
 
@@ -23,19 +24,27 @@ export class StreetSide extends Container {
         return super.finalize();
     }
 
+    public addChildWithOffset(child: Shape, offset: number) {
+        const diff = offset - this.size.x;
+        if (diff > 0) {
+            this.mirrored ? child.padding.zPos += diff : child.padding.zNeg += diff;
+        }
+        super.addChild(child);
+    }
+
     private positionElements() {
         let offset = 0;
-        const thisDimensions = this.size;
+        const thisSize = this.size;
         for (const object of this.children) {
-            const { x, y, z } = object.dimensions;
-            if (this.mirrored) {
+            const objSize = object.size, objDimensions = object.dimensions;
+            if (!this.mirrored) {
                 object.andRotate(Math.PI / 2 )
-                    .andTranslate(-(thisDimensions.x - z) / 2 + offset, (y - thisDimensions.y) / 2, -(thisDimensions.z - x) / 2);
+                    .andTranslate((objSize.z - thisSize.x) / 2 + offset + object.padding.zNeg, 0, (thisSize.z - objSize.x) / 2);
             } else {
                 object.andRotate(-Math.PI / 2)
-                    .andTranslate(-(thisDimensions.x - z) / 2 + offset, (y - thisDimensions.y) / 2, -(x - thisDimensions.z) / 2);
+                    .andTranslate((objSize.z - thisSize.x) / 2 + offset + object.padding.zPos, 0, (objSize.x - thisSize.z) / 2);
             }
-            offset += z;
+            offset += objDimensions.z;
         }
     }
 }

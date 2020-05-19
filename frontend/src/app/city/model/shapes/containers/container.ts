@@ -1,7 +1,6 @@
 import { Shape } from "../shape";
 import * as THREE from 'three';
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils";
-import { Box } from "../box";
 
 export abstract class Container extends Shape {
     protected constructor(public children: Shape[]) {
@@ -16,7 +15,12 @@ export abstract class Container extends Shape {
 
     finalize(): THREE.BufferGeometry {
         if (!this.finalized) {
-            this.geometry = BufferGeometryUtils.mergeBufferGeometries(this.children.map(child => child.finalize()));
+            if (this.children.length === 0) {
+                this.finalized = true;
+                return null;
+            }
+            this.geometry = BufferGeometryUtils.mergeBufferGeometries(this.children
+                .map(child => child.finalize()).filter(geometry => geometry !== null));
         }
         return super.finalize();
     }

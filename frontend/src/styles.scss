@@ -3,7 +3,10 @@
   box-sizing: border-box;
 }
 
-html, body { height: 100%; }
+html, body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
@@ -27,4 +30,8 @@ body {
 
 .mat-snack-bar-container.toast-message {
   margin-top: 140px;
+}
+
+.mat-snack-bar-container.element-hint {
+  margin-top: 210px;
 }

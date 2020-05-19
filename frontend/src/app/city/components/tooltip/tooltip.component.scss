@@ -1,15 +1,13 @@
 :host {
-  background: linen;
-  border-radius: 5px;
-  pointer-events: none;
-  padding: 5px;
-}
+  padding: 14px 16px;
+  min-height: 48px;
+  border-radius: 4px;
+  min-width: 344px;
+  width: fit-content;
+  max-width: 33vw;
+  background: rgba(0, 0, 0, 0.5);
 
-.info {
-  display: flex;
-  justify-content: space-between;
-
-  span + span {
-    margin-left: 5px;
+  .element-tooltip {
+    color: rgba(255, 255, 255, .7)
   }
 }

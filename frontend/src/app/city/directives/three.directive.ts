@@ -101,6 +101,7 @@ export class ThreeDirective implements OnInit, OnChanges, OnDestroy {
         // lights[0].position.set(-this.citySize - 200, 600, -this.citySize - 200);
         this.scene.add(directionalLight);
         // this.scene.add(dirLight);
+        this.scene.add(new THREE.AxesHelper(50))
         this.scene.add(directionalLight.target);
         this.scene.background = null;
     }

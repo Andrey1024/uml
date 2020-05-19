@@ -2,10 +2,10 @@ import { Action, createSelector, Selector, State, StateContext, Store } from '@n
 import { HttpClient } from "@angular/common/http";
 import { tap } from "rxjs/operators";
 import { Injectable } from "@angular/core";
-import { MemberElement, TypeElement } from "../model/presentation/server/element";
+import { Element, MemberElement, TypeElement } from "../model/presentation/server/element";
 import { iif, patch } from "@ngxs/store/operators";
 import { Author, Commit } from "../model/presentation/server/commit.model";
-import { AddChangesData, AddCommitData, AddCommits, VersionsState } from "./versions.state";
+import { AddChangesData, AddCommitData, AddCommits, Reset, VersionsState } from "./versions.state";
 import { VersionedElement } from "../model/versioning/versioned-element.model";
 import { Cached } from "../utils/cached-selector";
 import { ProjectModel } from "../model/presentation/server/project.model";
@@ -113,18 +113,21 @@ export interface RepositoryStateModel {
     loadingCount: number;
 }
 
+const defaults: RepositoryStateModel = {
+    repository: null,
+    selectedSourceRoot: '',
+    selectedPath: '',
+    selectedVersion: null,
+    search: '',
+    selectedElement: null,
+    compareStart: null,
+    loadingCount: 0
+};
+
 @State<RepositoryStateModel>({
     name: 'repository',
-    defaults: {
-        repository: null,
-        selectedSourceRoot: '',
-        selectedPath: '',
-        selectedVersion: null,
-        search: '',
-        selectedElement: null,
-        compareStart: null,
-        loadingCount: 0
-    }
+    defaults,
+    children: [VersionsState]
 })
 @Injectable()
 export class RepositoryState {
@@ -187,7 +190,7 @@ export class RepositoryState {
 
     @Cached('elementList')
     static getElementList(commitIndex: number): (...args: any[]) => ById<string> {
-        return createSelector([VersionsState.getTypesDataAtCommit(commitIndex)], (elements: { [name: string]: VersionedElement<TypeElement> }) => {
+        return createSelector([VersionsState.getDataAtCommit(commitIndex)], (elements: { [name: string]: VersionedElement<Element> }) => {
             return mapValues(elements, e => e.data.name);
         });
     }
@@ -213,6 +216,7 @@ export class RepositoryState {
         return [...authors.keys()].map(author => ({ author: authorsMap.get(author), count: authors.get(author) }))
             .sort((a, b) => b.count - a.count);
     }
+
 
     @Cached('elementDetails')
     static getElementDetails(commitIndex: number): (...args: any[]) => ElementConnections {
@@ -249,9 +253,7 @@ export class RepositoryState {
                 VersionsState.getMembersDataAtCommit(commitIndex, compareTo),
                 this.getSelectedSourceRoot,
                 this.getSelectedPath
-            ], (data: { [name: string]: VersionedElement<TypeElement> },
-                members: { [name: string]: VersionedElement<MemberElement> },
-                sourceRoot: string, path: string) =>
+            ], (data: ById<VersionedElement<TypeElement>>, members: ById<VersionedElement<MemberElement>>, sourceRoot: string, path: string) =>
                 createTree(Object.values(data)
                         .filter(e => e !== null)
                         .filter(e => e.data.sourceRoot === sourceRoot)
@@ -274,6 +276,8 @@ export class RepositoryState {
 
     @Action(OpenRepository)
     openRepository(ctx: StateContext<RepositoryStateModel>, { name }: OpenRepository) {
+        ctx.setState(defaults);
+        ctx.dispatch(new Reset());
         ctx.patchState({ repository: name });
         return this.http.get<Commit[]>(`/api/repository/${name}`).pipe(
             tap(commits => ctx.dispatch(new AddCommits(commits))),

@@ -27,11 +27,6 @@ export abstract class Shape {
 
     public abstract get size(): Point;
 
-    public getTranslation(): Point {
-        return new THREE.Vector3().setFromMatrixPosition(this.transform);
-    }
-
-
     public andPickId(pickId: number): this {
         this.pickId = pickId;
         return this;

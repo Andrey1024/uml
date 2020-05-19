@@ -1,20 +1,18 @@
-import { Illustrator, IllustratorHelper } from "./illustrator";
+import { IllustratorHelper } from "./illustrator";
 import { ItemNode } from "../tree-item.model";
 import { Shape } from "../shapes/shape";
-import { Element, TypeElement } from "../presentation/server/element";
+import { Element } from "../presentation/server/element";
 import * as THREE from "three";
 import { Box } from "../shapes/box";
 import { Cylinder } from "../shapes/cylinder";
-import { Container } from "../shapes/containers/container";
 import { MethodModel } from "../presentation/server/method.model";
 import { Brickwork } from "../shapes/containers/brickwork";
 import { VersionedElement } from "../versioning/versioned-element.model";
 import { VisualizerOptions } from "../../services/visualizer";
 import { Pyramid } from "../shapes/containers/pyramid";
-import { Color } from "three";
 
 
-export abstract class CommonIllustrator implements Illustrator, IllustratorHelper {
+export abstract class CommonIllustrator implements IllustratorHelper {
     protected pickIndex = 1;
     protected indicesMap = new Map<number, string>();
     protected namesMap = new Map<string, Shape>();
@@ -142,10 +140,6 @@ export abstract class CommonIllustrator implements Illustrator, IllustratorHelpe
             return this.createTypeElementChangesShape(node, options);
         }
     }
-
-    abstract createPackageShape(node: ItemNode, children: Container);
-
-    abstract createRootShape(children: Container): Shape;
 
     getTreeMesh(): THREE.Mesh {
         return new THREE.Mesh(this.rootShape.finalize(), new THREE.MeshPhongMaterial({

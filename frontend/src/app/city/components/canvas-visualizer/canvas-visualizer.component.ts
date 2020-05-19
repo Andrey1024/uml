@@ -33,6 +33,7 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
     @Input() selectedElement: string;
     @Input() options: VisualizerOptions;
 
+    @Output() hover = new EventEmitter<string>();
     @Output() select = new EventEmitter<string>();
 
     helper: IllustratorHelper;
@@ -78,6 +79,7 @@ export class CanvasVisualizerComponent implements OnChanges, OnInit, AfterViewIn
             this.highLightMesh = this.helper.createHighLightMesh(this.helper.getNameByIndex(id), 'tomato');
             this.data.add(this.highLightMesh);
         }
+        this.hover.emit(id === 0 ? null : this.helper.getNameByIndex(id));
     }
 
 

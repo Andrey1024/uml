@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
+import { Element } from "../../model/presentation/server/element";
 
 @Component({
     selector: 'uml-tooltip',
@@ -10,10 +11,11 @@ export class TooltipComponent implements OnInit {
         'PACKAGE': 'Пакет',
         'CLASS': 'Класс',
         'INTERFACE': 'Интерфейс',
-        'ENUM': 'Перечисление'
+        'ENUM': 'Перечисление',
+        'METHOD': 'Метод'
     }
 
-    object: any;
+    @Input() data: Element;
 
     constructor() {
     }

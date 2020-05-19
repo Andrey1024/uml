@@ -12,20 +12,19 @@ export interface Visualization {
     indicesMap: Map<number, string>;
 }
 
-export abstract class AbstractVisualizer {
-    protected illustratorClass: new () => Illustrator;
-    protected layoutContainer: new(children: Shape[]) => Container;
+export abstract class AbstractVisualizer<T extends Shape> {
+    protected illustratorClass: new () => Illustrator<T>;
 
     visualize(hierarchy: ItemNode[], options: VisualizerOptions): IllustratorHelper {
         if (!hierarchy.length) {
             return null;
         }
         const illustrator = new this.illustratorClass();
-        const createElements = (hierarchy: ItemNode): Shape => hierarchy.children === null
+        const createElements = (hierarchy: ItemNode): T => hierarchy.children === null
             ? illustrator.createElementShape(hierarchy, options)
-            : illustrator.createPackageShape(hierarchy, new this.layoutContainer(hierarchy.children.map(child => createElements(child))));
+            : illustrator.createPackageShape(hierarchy, hierarchy.children.map(child => createElements(child)));
 
-        illustrator.createRootShape(new this.layoutContainer(hierarchy.map(e => createElements(e))));
+        illustrator.createRootShape(hierarchy.map(e => createElements(e)));
         return illustrator;
     }
 }

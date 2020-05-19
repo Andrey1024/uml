@@ -79,3 +79,17 @@
 .authors-checkbox {
   margin-left: 12px;
 }
+
+.mat-sidenav-content {
+  position: relative;
+
+  uml-tooltip {
+    position: absolute;
+    top: 100px;
+    margin: auto;
+    left: 0;
+    right: 0;
+    text-align: center;
+  }
+
+}
