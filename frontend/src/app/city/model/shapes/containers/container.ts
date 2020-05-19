@@ -1,6 +1,7 @@
 import { Shape } from "../shape";
 import * as THREE from 'three';
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils";
+import { BufferGeometry } from "three";
 
 export abstract class Container extends Shape {
     protected constructor(public children: Shape[]) {
@@ -30,8 +31,11 @@ export abstract class Container extends Shape {
             .applyMatrix4(this.transform);
     }
 
-    createHighLightGeometry(): THREE.BufferGeometry {
-        const size = this.size;
-        return new THREE.BoxBufferGeometry(size.x + 1, size.y + 1, size.z + 1);
+    protected createHighLightGeometry(): BufferGeometry {
+        return null;
+    }
+
+    public getHighLightGeometry(): BufferGeometry {
+        return BufferGeometryUtils.mergeBufferGeometries(this.children.map(child => child.getHighLightGeometry()))
     }
 }

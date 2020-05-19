@@ -27,7 +27,17 @@ export class Plane extends Shape {
     }
 
     protected createHighLightGeometry(): THREE.BufferGeometry {
-        return new THREE.BoxBufferGeometry(this.length, 2, this.width).translate(0, this.elevation, 0);
+        const geometry = new THREE.BufferGeometry();const vertices = [
+            -this.length / 2, this.elevation + 1, -this.width / 2,
+            -this.length / 2, this.elevation + 1, this.width / 2,
+            this.length / 2, this.elevation + 1, this.width / 2,
+            this.length / 2, this.elevation + 1, -this.width / 2
+        ];
+        geometry.setIndex([0, 1, 2, 2, 3, 0])
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(8).fill(0), 2))
+        geometry.computeVertexNormals();
+        return geometry;
     }
 
 

@@ -276,9 +276,8 @@ export class RepositoryState {
 
     @Action(OpenRepository)
     openRepository(ctx: StateContext<RepositoryStateModel>, { name }: OpenRepository) {
-        ctx.setState(defaults);
+        ctx.patchState({...defaults, repository: name});
         ctx.dispatch(new Reset());
-        ctx.patchState({ repository: name });
         return this.http.get<Commit[]>(`/api/repository/${name}`).pipe(
             tap(commits => ctx.dispatch(new AddCommits(commits))),
             tap(commits => ctx.dispatch(new LoadState(commits[0].name)))

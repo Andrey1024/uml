@@ -10,6 +10,4 @@ export class DistrictVisualizer extends AbstractVisualizer<Shape> implements Vis
     }
 
     protected illustratorClass = DistrictIllustrator;
-    protected layoutContainer = Grid;
-
 }

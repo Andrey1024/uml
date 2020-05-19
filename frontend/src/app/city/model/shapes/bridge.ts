@@ -28,6 +28,16 @@ export class Bridge extends Shape {
     }
 
     protected createHighLightGeometry(): THREE.BufferGeometry {
-        return null;
+        const geometry = new THREE.BufferGeometry();const vertices = [
+            -this.length / 2, this.elevationFrom + 1, -this.width / 2,
+            -this.length / 2, this.elevationFrom + 1, this.width / 2,
+            this.length / 2, this.elevationTo + 1, this.width / 2,
+            this.length / 2, this.elevationTo + 1, -this.width / 2
+        ];
+        geometry.setIndex([0, 1, 2, 2, 3, 0])
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(8).fill(0), 2))
+        geometry.computeVertexNormals();
+        return geometry;
     }
 }
